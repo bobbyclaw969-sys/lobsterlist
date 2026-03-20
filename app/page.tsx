@@ -1,7 +1,6 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { LandingWalletButton } from '@/components/auth/landing-wallet-button'
 
 export default async function Home() {
   const supabase = await createClient()
@@ -16,8 +15,7 @@ export default async function Home() {
         <span className="text-lg font-bold tracking-tight">
           <span className="text-orange-400">Lobster</span>List
         </span>
-        <div className="flex items-center gap-3">
-          <LandingWalletButton />
+        <div className="flex gap-3">
           <Link
             href="/login"
             className="text-sm text-zinc-400 hover:text-white transition-colors px-3 py-1.5"
