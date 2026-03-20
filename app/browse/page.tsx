@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { logout } from '@/app/actions/auth'
 import { ListingCard } from '@/components/listings/listing-card'
 import { getBtcPriceUsd } from '@/lib/utils/sats'
+import { SortSelect } from '@/components/listings/sort-select'
 import type { ListingCategory, ListingWithDetail } from '@/types/database'
 
 export const metadata = {
@@ -134,16 +135,7 @@ export default async function BrowsePage({ searchParams }: BrowsePageProps) {
             </div>
 
             <div className="ml-auto">
-              <select
-                name="sort"
-                defaultValue={sort}
-                onChange={() => {}} // handled by form submit
-                className="bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-1.5 text-xs text-zinc-300 focus:outline-none focus:border-orange-500"
-              >
-                <option value="newest">Newest</option>
-                <option value="price_asc">Price: Low to High</option>
-                <option value="price_desc">Price: High to Low</option>
-              </select>
+              <SortSelect current={sort} />
             </div>
           </div>
         </form>
