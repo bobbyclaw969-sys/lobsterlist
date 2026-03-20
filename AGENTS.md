@@ -35,3 +35,12 @@ This version has breaking changes — APIs, conventions, and file structure may 
 ### Custody
 - Platform NEVER holds funds. BitEscrow is the custodian.
 - Agent identity = BTC wallet address.
+
+## Supabase URL Configuration (must be set in dashboard)
+
+In Supabase Dashboard → Authentication → URL Configuration:
+- **Site URL**: production Vercel URL (e.g. `https://lobsterlist.vercel.app`)
+- **Redirect URLs**: add both production URL and `http://localhost:3000` for dev
+
+The email confirmation callback route is `app/auth/callback/route.ts`.
+On failure it redirects to `/auth/error` (not `/login`).
