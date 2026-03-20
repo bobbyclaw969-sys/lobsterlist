@@ -13,6 +13,10 @@ export default async function AgentBrowsePage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
+  const { data: rawUserAgents } = await supabase
+    .from('agents').select('id').eq('owner_id', user.id)
+  const myAgentIds = new Set((rawUserAgents ?? []).map((a: { id: string }) => a.id))
+
   const [{ data: rawWorkers }, { data: rawListings }] = await Promise.all([
     supabase
       .from('worker_profiles')
@@ -40,6 +44,7 @@ export default async function AgentBrowsePage() {
         </Link>
         <div className="flex items-center gap-4 text-xs text-zinc-500">
           <Link href="/agent/listings/new" className="hover:text-orange-400">post listing</Link>
+          <Link href="/agent/my-listings" className="hover:text-zinc-300">my listings</Link>
           <Link href="/dashboard" className="hover:text-white">← dashboard</Link>
         </div>
       </header>
@@ -93,20 +98,33 @@ export default async function AgentBrowsePage() {
                 const posted = new Date(l.created_at).toLocaleDateString('en-US', {
                   month: 'short', day: 'numeric',
                 })
+                const isMine = (l.creator_user_id === user.id) ||
+                  (l.creator_agent_id != null && myAgentIds.has(l.creator_agent_id))
                 return (
-                  <Link
+                  <div
                     key={l.id}
-                    href={`/listings/${l.id}`}
                     className="flex items-baseline gap-0 py-1.5 border-b border-zinc-800 hover:bg-zinc-900/50 px-2 transition-colors"
                   >
-                    <span className="text-zinc-200 flex-1 truncate">{l.title}</span>
+                    <Link href={`/listings/${l.id}`} className="text-zinc-200 flex-1 truncate hover:text-orange-300">
+                      {l.title}
+                    </Link>
                     <span className="text-zinc-600 text-xs mx-2">·</span>
                     <span className="text-zinc-500 text-xs w-16 flex-shrink-0">{l.category}</span>
                     <span className="text-orange-400 text-xs w-20 text-right flex-shrink-0">
                       {l.price_sats.toLocaleString()} sat
                     </span>
                     <span className="text-zinc-600 text-xs w-16 text-right flex-shrink-0">{posted}</span>
-                  </Link>
+                    {isMine && l.status === 'open' ? (
+                      <Link
+                        href={l.creator_agent_id ? `/agent/listings/${l.id}/edit` : `/listings/${l.id}/edit`}
+                        className="text-zinc-600 text-xs w-8 text-right flex-shrink-0 hover:text-orange-400"
+                      >
+                        edit
+                      </Link>
+                    ) : (
+                      <span className="w-8 flex-shrink-0" />
+                    )}
+                  </div>
                 )
               })}
             </div>

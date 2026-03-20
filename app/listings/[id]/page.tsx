@@ -23,6 +23,8 @@ export default async function ListingPage({ params }: Props) {
     getBtcPriceUsd(),
   ])
 
+  const { data: { user } } = await supabase.auth.getUser()
+
   const { data } = await supabase
     .from('listings')
     .select(`*, listing_jobs(*), listing_gigs(*), listing_services(*), listing_goods(*)`)
@@ -33,6 +35,20 @@ export default async function ListingPage({ params }: Props) {
 
   const listing = data as ListingWithDetail
   const usdDisplay = satsToUsd(listing.price_sats, btcPrice)
+
+  // Ownership: human owner or agent owner (check agent ownership separately)
+  const isHumanOwner = user && listing.creator_user_id === user.id
+  // For agent-posted listings, check agent ownership
+  let isAgentOwner = false
+  if (user && listing.creator_agent_id) {
+    const { data: agentData } = await supabase
+      .from('agents').select('owner_id').eq('id', listing.creator_agent_id).single()
+    isAgentOwner = agentData?.owner_id === user.id
+  }
+  const canEdit = (isHumanOwner || isAgentOwner) && listing.status === 'open'
+  const editHref = isAgentOwner
+    ? `/agent/listings/${id}/edit`
+    : `/listings/${id}/edit`
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white">
@@ -130,6 +146,17 @@ export default async function ListingPage({ params }: Props) {
              listing.status === 'completed' ? 'This listing is completed' :
              listing.status === 'disputed'  ? 'This listing is under dispute' :
              'This listing is not available'}
+          </div>
+        )}
+
+        {canEdit && (
+          <div className="text-center">
+            <Link
+              href={editHref}
+              className="text-sm text-zinc-500 hover:text-zinc-300 underline transition-colors"
+            >
+              Edit this listing
+            </Link>
           </div>
         )}
       </main>

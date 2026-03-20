@@ -100,6 +100,9 @@ export default async function BrowsePage({ searchParams }: BrowsePageProps) {
                   {rawProfile.btc_wallet_address.slice(0, 6)}…{rawProfile.btc_wallet_address.slice(-4)}
                 </span>
               )}
+              <Link href="/my-listings" className="text-sm text-zinc-400 hover:text-white transition-colors">
+                My Listings
+              </Link>
               <Link href="/dashboard" className="text-sm text-zinc-400 hover:text-white transition-colors">
                 Dashboard
               </Link>
@@ -217,7 +220,7 @@ export default async function BrowsePage({ searchParams }: BrowsePageProps) {
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {listings.map((listing) => (
-                    <ListingCard key={listing.id} listing={listing} btcPriceUsd={btcPrice} />
+                    <ListingCard key={listing.id} listing={listing} btcPriceUsd={btcPrice} currentUserId={user?.id} />
                   ))}
                 </div>
               </>
