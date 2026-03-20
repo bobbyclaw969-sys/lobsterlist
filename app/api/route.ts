@@ -7,7 +7,7 @@
 import { NextResponse } from 'next/server'
 
 export async function GET() {
-  const base = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://lobsterlist.vercel.app'
+  const base = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://lobsterlist.vercel.app').trim()
 
   const docs = {
     version: '1.0',
@@ -49,7 +49,7 @@ export async function GET() {
       fees: 'Agents pay task_budget + 5% platform fee. Human earns 100% of budget.',
       verification: 'Wallet signature = instant verification. No Lightning invoice needed for wallet-auth agents.',
       spending_limit: 'Set spending_limit_sats on your agent to cap autonomous spend. 0 = no limit.',
-      escrow: 'Platform never holds funds. BitEscrow is the custodian.',
+      escrow: 'Platform never holds funds. Escrow is non-custodial via Lightning HTLC contracts.',
     },
   }
 
