@@ -2,18 +2,19 @@ export type Json = string | number | boolean | null | { [key: string]: Json | un
 
 // ── Enums ─────────────────────────────────────────────────────────────────────
 
-export type WalletType       = 'unisat' | 'xverse' | 'leather'
-export type AuthMethod       = 'email' | 'wallet' | 'both'
-export type ListingCategory  = 'job' | 'gig' | 'service' | 'good'
-export type ListingStatus    = 'pending_payment' | 'open' | 'claimed' | 'completed' | 'disputed'
-export type PricingType      = 'hourly' | 'fixed'
-export type LicenseType      = 'personal' | 'commercial' | 'exclusive'
-export type WaitlistUserType = 'human' | 'agent_builder'
-export type InvoiceType      = 'agent_registration' | 'listing_fee' | 'escrow_funding'
-export type InvoiceStatus    = 'pending' | 'paid' | 'expired'
-export type EscrowStatus     = 'pending_funding' | 'funded' | 'completed' | 'disputed' | 'cancelled' | 'refunded'
-export type DisputeStatus    = 'open' | 'resolved' | 'cancelled'
-export type TxType           = 'escrow_received' | 'cashout' | 'platform_fee' | 'listing_fee' | 'registration_fee'
+export type WalletType        = 'unisat' | 'xverse' | 'leather'
+export type AuthMethod        = 'email' | 'wallet' | 'both'
+export type ListingCategory   = 'job' | 'gig' | 'service' | 'good'
+export type ListingStatus     = 'pending_payment' | 'open' | 'claimed' | 'completed' | 'disputed'
+export type PricingType       = 'hourly' | 'fixed'
+export type LicenseType       = 'personal' | 'commercial' | 'exclusive'
+export type WaitlistUserType  = 'human' | 'agent_builder'
+export type InvoiceType       = 'agent_registration' | 'listing_fee' | 'escrow_funding'
+export type InvoiceStatus     = 'pending' | 'paid' | 'expired'
+export type EscrowStatus      = 'pending_funding' | 'funded' | 'completed' | 'disputed' | 'cancelled' | 'refunded'
+export type DisputeStatus     = 'open' | 'resolved' | 'cancelled'
+export type TxType            = 'escrow_received' | 'cashout' | 'platform_fee' | 'listing_fee' | 'registration_fee'
+export type WorkerAvailability = 'full_time' | 'part_time' | 'weekends'
 
 // ── Row types ─────────────────────────────────────────────────────────────────
 
@@ -172,6 +173,20 @@ export type TransactionRow = {
   created_at:   string
 }
 
+export type WorkerProfileRow = {
+  id:                    string
+  user_id:               string
+  headline:              string
+  bio:                   string | null
+  location:              string | null
+  hourly_rate_usd_cents: number
+  availability:          WorkerAvailability
+  skills:                string[]
+  is_active:             boolean
+  created_at:            string
+  updated_at:            string
+}
+
 export type BtcPriceCacheRow = {
   id:         number
   price_usd:  number
@@ -192,6 +207,7 @@ export type LightningInvoiceInsert = Pick<LightningInvoiceRow, 'invoice_type' | 
 export type EscrowContractInsert = Pick<EscrowContractRow, 'listing_id' | 'amount_sats' | 'platform_fee_sats'> & Partial<EscrowContractRow>
 export type DisputeInsert        = Pick<DisputeRow, 'contract_id' | 'raised_by_user_id' | 'reason'> & Partial<DisputeRow>
 export type TransactionInsert    = Pick<TransactionRow, 'user_id' | 'tx_type' | 'amount_sats'> & Partial<TransactionRow>
+export type WorkerProfileInsert  = Pick<WorkerProfileRow, 'user_id' | 'headline' | 'hourly_rate_usd_cents'> & Partial<WorkerProfileRow>
 
 // ── Database type (Supabase client generic) ───────────────────────────────────
 
@@ -291,6 +307,12 @@ export interface Database {
         Update:        Partial<AuthChallengeRow>
         Relationships: []
       }
+      worker_profiles: {
+        Row:           WorkerProfileRow
+        Insert:        WorkerProfileInsert
+        Update:        Partial<WorkerProfileRow>
+        Relationships: []
+      }
     }
   }
 }
@@ -308,4 +330,8 @@ export type ListingWithDetail = ListingRow & {
 
 export type EscrowWithListing = EscrowContractRow & {
   listing?: Pick<ListingRow, 'id' | 'title' | 'category' | 'price_sats'>
+}
+
+export type WorkerProfileWithUser = WorkerProfileRow & {
+  user?: Pick<UserRow, 'id' | 'name' | 'avatar_url' | 'rating'> | null
 }

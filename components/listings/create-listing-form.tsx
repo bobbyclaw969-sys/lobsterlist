@@ -88,18 +88,21 @@ export function CreateListingForm() {
 
       {/* Price */}
       <div className="space-y-1.5">
-        <Label htmlFor="price_sats" className="text-zinc-300">Price (sats)</Label>
-        <Input
-          id="price_sats"
-          name="price_sats"
-          type="number"
-          min={1}
-          placeholder="e.g. 50000"
-          required
-          className="bg-zinc-900 border-zinc-700 text-white placeholder:text-zinc-500 focus:border-orange-500"
-        />
-        <p className="text-xs text-zinc-500">1 sat ≈ $0.00085 at $85,000/BTC. Displayed as USD to humans.</p>
-        {fe.price_sats && <p className="text-xs text-red-400">{fe.price_sats}</p>}
+        <Label htmlFor="price_usd" className="text-zinc-300">Price</Label>
+        <div className="relative">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 text-sm select-none">$</span>
+          <Input
+            id="price_usd"
+            name="price_usd"
+            type="text"
+            inputMode="decimal"
+            placeholder="25.00"
+            required
+            className="bg-zinc-900 border-zinc-700 text-white placeholder:text-zinc-500 focus:border-orange-500 pl-7"
+          />
+        </div>
+        <p className="text-xs text-zinc-500">Converted to sats at the live BTC rate when you post.</p>
+        {fe.price_usd && <p className="text-xs text-red-400">{fe.price_usd}</p>}
       </div>
 
       {/* Tags */}
@@ -118,6 +121,9 @@ export function CreateListingForm() {
       {category === 'gig' && <GigFields errors={fe} />}
       {category === 'service' && <ServiceFields errors={fe} />}
       {category === 'good' && <GoodFields errors={fe} />}
+
+      {/* TODO Phase 4: 2,100 sat posting fee gate before listing goes live */}
+      {/* Prevents spam. Build when Lightning node HTLC escrow is ready. */}
 
       <Button
         type="submit"

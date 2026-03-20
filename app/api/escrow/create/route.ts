@@ -88,6 +88,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: contractError?.message ?? 'Failed to create contract' }, { status: 500 })
   }
 
+  // Mark listing as claimed so no other buyer can race to claim it
+  await service.from('listings').update({ status: 'claimed' }).eq('id', listingId)
+
   // Create Lightning invoice for escrow funding
   const invoice = await createLightningInvoice(
     listing.price_sats,
