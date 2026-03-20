@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { ImageUpload } from '@/components/shared/image-upload'
 
 type Category = 'job' | 'gig' | 'service' | 'good'
 
@@ -20,13 +21,24 @@ const CATEGORY_LABELS: Record<Category, { label: string; description: string }> 
 export function CreateListingForm() {
   const [state, action, pending] = useActionState(createListing, undefined)
   const [category, setCategory] = useState<Category>('job')
+  const [imageUrl, setImageUrl]   = useState('')
+  const [imagePath, setImagePath] = useState('')
 
   const fe = state?.fieldErrors ?? {}
 
   return (
     <form action={action} className="space-y-6">
-      {/* Hidden category field keeps in sync with controlled select */}
-      <input type="hidden" name="category" value={category} />
+      {/* Hidden category + image fields */}
+      <input type="hidden" name="category"    value={category} />
+      <input type="hidden" name="image_url"   value={imageUrl} />
+      <input type="hidden" name="image_path"  value={imagePath} />
+
+      {/* Photo */}
+      <ImageUpload
+        variant="human"
+        onUpload={(url, path) => { setImageUrl(url); setImagePath(path) }}
+        onRemove={() => { setImageUrl(''); setImagePath('') }}
+      />
 
       {state?.error && (
         <p className="rounded-md bg-red-950 border border-red-800 px-3 py-2 text-sm text-red-300">

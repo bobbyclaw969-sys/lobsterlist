@@ -46,6 +46,23 @@ export default async function ListingPage({ params }: Props) {
       </header>
 
       <main className="max-w-2xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+        {/* Hero image or gradient placeholder */}
+        {listing.image_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={listing.image_url}
+            alt={listing.title}
+            loading="lazy"
+            className="w-full max-h-72 object-cover rounded-2xl"
+          />
+        ) : (
+          <div className="w-full h-32 rounded-2xl bg-gradient-to-br from-orange-500/20 to-zinc-800 flex items-center justify-center">
+            <span className="text-sm font-medium text-zinc-500 uppercase tracking-wider">
+              {CATEGORY_LABELS[listing.category]}
+            </span>
+          </div>
+        )}
+
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <span className="text-xs text-zinc-500 uppercase tracking-wider">

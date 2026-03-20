@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { logout } from '@/app/actions/auth'
 import { ListingCard } from '@/components/listings/listing-card'
 import { WalletLinkSection } from '@/components/auth/wallet-link-section'
+import { AvatarUpload } from '@/components/shared/avatar-upload'
 import { getBtcPriceUsd } from '@/lib/utils/sats'
 import type { ListingWithDetail, UserRow } from '@/types/database'
 
@@ -42,9 +43,10 @@ export default async function MyProfilePage() {
       <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-8">
         {/* Profile header */}
         <div className="flex items-start gap-4">
-          <div className="w-16 h-16 rounded-full bg-orange-500/20 border border-orange-500/30 flex items-center justify-center text-2xl font-bold text-orange-400 flex-shrink-0">
-            {(profile?.name ?? user.email ?? '?')[0].toUpperCase()}
-          </div>
+          <AvatarUpload
+            currentUrl={profile?.avatar_url ?? null}
+            displayName={profile?.name ?? user.email ?? '?'}
+          />
           <div className="space-y-1 min-w-0">
             <h1 className="text-xl font-bold">{profile?.name ?? 'Anonymous'}</h1>
             <p className="text-sm text-zinc-400">{user.email}</p>

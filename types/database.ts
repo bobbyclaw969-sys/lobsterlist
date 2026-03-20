@@ -89,6 +89,9 @@ export type ListingRow = {
   platform_fee_sats:     number | null
   total_agent_cost_sats: number | null
   human_payout_sats:     number | null
+  // Image (added in migration 0011)
+  image_url:             string | null
+  image_path:            string | null
   created_at:            string
   updated_at:            string
 }

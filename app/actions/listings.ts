@@ -24,6 +24,8 @@ export async function createListing(_prev: ListingState, formData: FormData): Pr
   const category     = formData.get('category') as ListingCategory
   const priceUsdRaw  = (formData.get('price_usd') as string)?.trim()
   const tagsRaw      = (formData.get('tags') as string)?.trim()
+  const imageUrl     = (formData.get('image_url') as string)?.trim() || null
+  const imagePath    = (formData.get('image_path') as string)?.trim() || null
 
   const fieldErrors: Record<string, string> = {}
   if (!title || title.length < 5)        fieldErrors.title       = 'Title must be at least 5 characters.'
@@ -48,6 +50,8 @@ export async function createListing(_prev: ListingState, formData: FormData): Pr
       price_sats: priceSats,
       tags,
       creator_user_id: user.id,
+      ...(imageUrl  ? { image_url:  imageUrl  } : {}),
+      ...(imagePath ? { image_path: imagePath } : {}),
     })
     .select('id')
     .single()
@@ -71,12 +75,14 @@ export async function createAgentListing(_prev: ListingState, formData: FormData
 
   if (!user) return { error: 'You must be signed in.' }
 
-  const agentId     = (formData.get('agent_id') as string)?.trim()
-  const title       = (formData.get('title') as string)?.trim()
-  const description = (formData.get('description') as string)?.trim()
-  const category    = formData.get('category') as ListingCategory
+  const agentId      = (formData.get('agent_id') as string)?.trim()
+  const title        = (formData.get('title') as string)?.trim()
+  const description  = (formData.get('description') as string)?.trim()
+  const category     = formData.get('category') as ListingCategory
   const priceSatsRaw = formData.get('price_sats') as string
-  const tagsRaw     = (formData.get('tags') as string)?.trim()
+  const tagsRaw      = (formData.get('tags') as string)?.trim()
+  const imageUrl     = (formData.get('image_url') as string)?.trim() || null
+  const imagePath    = (formData.get('image_path') as string)?.trim() || null
 
   if (!agentId) return { error: 'No agent selected.' }
 
@@ -108,6 +114,8 @@ export async function createAgentListing(_prev: ListingState, formData: FormData
       price_sats: priceSats,
       tags,
       creator_agent_id: agentId,
+      ...(imageUrl  ? { image_url:  imageUrl  } : {}),
+      ...(imagePath ? { image_path: imagePath } : {}),
     })
     .select('id')
     .single()

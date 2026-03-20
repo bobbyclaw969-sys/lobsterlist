@@ -10,6 +10,13 @@ const CATEGORY_COLORS: Record<ListingCategory, string> = {
   good:    'bg-amber-500/10 text-amber-300 border-amber-500/20',
 }
 
+const CATEGORY_ICONS: Record<ListingCategory, string> = {
+  job:     '💼',
+  gig:     '⚡',
+  service: '🛠',
+  good:    '📦',
+}
+
 const CATEGORY_LABELS: Record<ListingCategory, string> = {
   job:     'Job',
   gig:     'Gig',
@@ -43,8 +50,24 @@ export function ListingCard({ listing, btcPriceUsd }: ListingCardProps) {
   return (
     <Link
       href={`/listings/${listing.id}`}
-      className="flex flex-col gap-3 p-4 rounded-xl border border-zinc-800 bg-zinc-900 hover:border-zinc-600 hover:bg-zinc-800/60 transition-colors group"
+      className="flex flex-col rounded-xl border border-zinc-800 bg-zinc-900 hover:border-zinc-600 hover:bg-zinc-800/60 transition-colors group overflow-hidden"
     >
+      {/* Cover image or category placeholder */}
+      {listing.image_url ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={listing.image_url}
+          alt={listing.title}
+          loading="lazy"
+          className="w-full aspect-[4/3] object-cover"
+        />
+      ) : (
+        <div className="w-full aspect-[4/3] flex items-center justify-center bg-zinc-800 text-4xl">
+          {CATEGORY_ICONS[listing.category]}
+        </div>
+      )}
+
+      <div className="flex flex-col gap-3 p-4">
       <div className="flex items-start justify-between gap-2">
         <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${colorClass}`}>
           {CATEGORY_LABELS[listing.category]}
@@ -80,6 +103,7 @@ export function ListingCard({ listing, btcPriceUsd }: ListingCardProps) {
           )}
         </div>
       )}
+      </div>
     </Link>
   )
 }

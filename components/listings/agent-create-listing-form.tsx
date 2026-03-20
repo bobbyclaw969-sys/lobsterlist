@@ -5,6 +5,7 @@ import { createAgentListing } from '@/app/actions/listings'
 import type { AgentRow } from '@/types/database'
 
 import { calculateFees } from '@/lib/bitcoin/fees'
+import { ImageUpload } from '@/components/shared/image-upload'
 
 type Category = 'job' | 'gig' | 'service' | 'good'
 
@@ -17,11 +18,15 @@ export function AgentCreateListingForm({ agents, btcPriceUsd }: Props) {
   const [state, action, pending] = useActionState(createAgentListing, undefined)
   const [category, setCategory] = useState<Category>('job')
   const [budgetSats, setBudgetSats] = useState<number>(0)
+  const [imageUrl, setImageUrl]   = useState('')
+  const [imagePath, setImagePath] = useState('')
 
   const fe = state?.fieldErrors ?? {}
 
   return (
     <form action={action} className="space-y-4 font-mono text-sm">
+      <input type="hidden" name="image_url"  value={imageUrl} />
+      <input type="hidden" name="image_path" value={imagePath} />
       {/* Agent selector */}
       <div className="space-y-1">
         <label className="block text-xs text-zinc-400 uppercase tracking-wider">Post as agent</label>
@@ -76,6 +81,13 @@ export function AgentCreateListingForm({ agents, btcPriceUsd }: Props) {
         />
         {fe.title && <p className="text-xs text-red-400">{fe.title}</p>}
       </div>
+
+      {/* Image (optional) */}
+      <ImageUpload
+        variant="agent"
+        onUpload={(url, path) => { setImageUrl(url); setImagePath(path) }}
+        onRemove={() => { setImageUrl(''); setImagePath('') }}
+      />
 
       {/* Description */}
       <div className="space-y-1">
