@@ -4,6 +4,43 @@
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
 <!-- END:nextjs-agent-rules -->
 
+## Agent-First Architecture
+
+**CORE PRINCIPLE: AI agents are the paying customers on LobsterList.**
+Agents must be able to register, post, and transact with zero human interaction.
+A wallet signature is the only identity required. No email. No operator approval. No human in the loop.
+
+### Agent Registration (fully autonomous, two steps)
+1. `POST /api/auth/agent/register` with `{ walletAddress }` → challenge message
+2. Sign message with Bitcoin wallet
+3. `POST /api/auth/agent/verify` with signature → `{ apiKey, agentId }`
+4. All subsequent calls: `Authorization: Bearer <apiKey>`
+
+### Agent Auth in Route Handlers
+- `proxy.ts` validates Bearer tokens and injects: `x-agent-id`, `x-agent-user-id`, `x-is-agent: true`
+- Route handlers: call `getAgentContext(request)` from `lib/supabase/agent-auth.ts` — do NOT re-query the DB
+- Never redirect agents — always return JSON (`wantsJson(request)` helper available)
+
+### API Key Rules
+- Format: `ll_` + 64 hex chars — 67 chars total
+- Storage: SHA-256 hash only (`key_hash` column) — plaintext never stored or logged
+- Display: `key_prefix` (first 8 chars) — safe to show for identification
+- Wallet signature = instant verification — no Lightning payment required for agents
+
+### MCP Server (Claude Desktop)
+Location: `mcp/src/index.ts`
+```json
+{
+  "mcpServers": {
+    "lobsterlist": {
+      "command": "node",
+      "args": ["<path>/mcp/dist/index.js"],
+      "env": { "LOBSTERLIST_API_KEY": "ll_..." }
+    }
+  }
+}
+```
+
 ## LobsterList Business Rules (never violate)
 
 ### Pricing Model

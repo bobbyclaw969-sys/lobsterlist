@@ -40,7 +40,20 @@ export type UserRow = {
   trust_deposit_paid:     boolean
   trust_deposit_sats:     number
   trust_deposit_returned: boolean
+  // Agent-native auth (added in migration 0012)
+  is_agent:               boolean
   created_at:             string
+}
+
+export type AgentApiKeyRow = {
+  id:           string
+  agent_id:     string
+  key_hash:     string   // SHA-256 — never expose to client
+  key_prefix:   string   // first 8 chars — safe to display
+  label:        string | null
+  last_used_at: string | null
+  created_at:   string
+  revoked_at:   string | null
 }
 
 export type AuthChallengeRow = {
@@ -330,6 +343,12 @@ export interface Database {
         Row:           AuthChallengeRow
         Insert:        Omit<AuthChallengeRow, 'id' | 'created_at' | 'used'>
         Update:        Partial<AuthChallengeRow>
+        Relationships: []
+      }
+      agent_api_keys: {
+        Row:           AgentApiKeyRow
+        Insert:        Pick<AgentApiKeyRow, 'agent_id' | 'key_hash' | 'key_prefix'> & Partial<AgentApiKeyRow>
+        Update:        Partial<AgentApiKeyRow>
         Relationships: []
       }
       worker_profiles: {

@@ -1,8 +1,8 @@
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { getBtcPriceUsd, satsToUsd } from '@/lib/utils/sats'
-import type { AgentRow, ListingWithDetail } from '@/types/database'
+import type { AgentRow, AgentApiKeyRow, ListingWithDetail } from '@/types/database'
 
 interface Props {
   params: Promise<{ id: string }>
@@ -26,14 +26,23 @@ export default async function AgentPage({ params }: Props) {
   // Only owner can view this page
   if (agent.owner_id !== user.id) notFound()
 
-  const { data: rawListings } = await supabase
-    .from('listings')
-    .select('*, listing_jobs(*), listing_gigs(*), listing_services(*), listing_goods(*)')
-    .eq('creator_agent_id', id)
-    .order('created_at', { ascending: false })
-    .limit(20)
+  const [{ data: rawListings }, { data: rawKeys }] = await Promise.all([
+    supabase
+      .from('listings')
+      .select('*, listing_jobs(*), listing_gigs(*), listing_services(*), listing_goods(*)')
+      .eq('creator_agent_id', id)
+      .order('created_at', { ascending: false })
+      .limit(20),
+    (await createServiceClient())
+      .from('agent_api_keys')
+      .select('id, key_prefix, label, last_used_at, created_at')
+      .eq('agent_id', id)
+      .is('revoked_at', null)
+      .order('created_at', { ascending: false }),
+  ])
 
   const listings = (rawListings ?? []) as ListingWithDetail[]
+  const apiKeys  = (rawKeys ?? []) as Pick<AgentApiKeyRow, 'id' | 'key_prefix' | 'label' | 'last_used_at' | 'created_at'>[]
 
   const spentPct = agent.spending_limit_sats > 0
     ? Math.min(100, Math.round((agent.sats_spent_total / agent.spending_limit_sats) * 100))
@@ -65,7 +74,7 @@ export default async function AgentPage({ params }: Props) {
                 </span>
               ) : (
                 <span className="text-xs bg-amber-500/10 border border-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full">
-                  Pending payment
+                  Unverified
                 </span>
               )}
             </div>
@@ -120,6 +129,9 @@ export default async function AgentPage({ params }: Props) {
           <SpendingLimitForm agentId={id} currentLimit={agent.spending_limit_sats} />
         </div>
 
+        {/* API Keys */}
+        <ApiKeysSection agentId={id} initialKeys={apiKeys} />
+
         {/* Listings */}
         <div className="space-y-3">
           <h2 className="text-lg font-semibold">Listings by this agent</h2>
@@ -150,5 +162,6 @@ export default async function AgentPage({ params }: Props) {
   )
 }
 
-// Inline spending limit editor (client component)
+// Client components
 import { SpendingLimitForm } from '@/components/agents/spending-limit-form'
+import { ApiKeysSection } from '@/components/agents/api-keys-section'
