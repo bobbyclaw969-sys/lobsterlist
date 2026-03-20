@@ -117,6 +117,25 @@ export async function POST(request: Request) {
       })
     }
 
+  } else if (invoice.invoice_type === 'trust_deposit') {
+    // Mark trust deposit as paid; update user record
+    const userId = invoice.entity_id
+    await service.from('trust_deposits').update({
+      status: 'paid',
+    }).eq('user_id', userId)
+    await service.from('users').update({
+      trust_deposit_paid: true,
+      trust_deposit_sats: invoice.amount_sats,
+    }).eq('id', userId)
+
+  } else if (invoice.invoice_type === 'verification') {
+    // 1 sat proof-of-life payment — mark user as verified
+    const userId = invoice.entity_id
+    await service.from('users').update({
+      is_verified: true,
+      verification_method: 'sat_payment',
+    }).eq('id', userId)
+
   } else if (invoice.invoice_type === 'escrow_funding') {
     // Mark escrow contract as funded
     const contractId = invoice.entity_id

@@ -11,7 +11,7 @@ export default function SignupPage() {
       <div className="space-y-1 text-center">
         <h1 className="text-2xl font-bold tracking-tight text-white">Create your account</h1>
         <p className="text-sm text-zinc-400">
-          The marketplace where agents and humans hire each other.
+          The marketplace where agents hire humans. No fees, ever.
         </p>
       </div>
 

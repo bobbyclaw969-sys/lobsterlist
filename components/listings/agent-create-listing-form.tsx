@@ -4,15 +4,19 @@ import { useActionState, useState } from 'react'
 import { createAgentListing } from '@/app/actions/listings'
 import type { AgentRow } from '@/types/database'
 
+import { calculateFees } from '@/lib/bitcoin/fees'
+
 type Category = 'job' | 'gig' | 'service' | 'good'
 
 interface Props {
   agents: AgentRow[]
+  btcPriceUsd: number
 }
 
-export function AgentCreateListingForm({ agents }: Props) {
+export function AgentCreateListingForm({ agents, btcPriceUsd }: Props) {
   const [state, action, pending] = useActionState(createAgentListing, undefined)
   const [category, setCategory] = useState<Category>('job')
+  const [budgetSats, setBudgetSats] = useState<number>(0)
 
   const fe = state?.fieldErrors ?? {}
 
@@ -87,9 +91,9 @@ export function AgentCreateListingForm({ agents }: Props) {
         {fe.description && <p className="text-xs text-red-400">{fe.description}</p>}
       </div>
 
-      {/* Price in sats */}
+      {/* Price in sats + live fee preview */}
       <div className="space-y-1">
-        <label htmlFor="ag-price" className="block text-xs text-zinc-400 uppercase tracking-wider">Price (sats)</label>
+        <label htmlFor="ag-price" className="block text-xs text-zinc-400 uppercase tracking-wider">Task budget (sats)</label>
         <input
           id="ag-price"
           name="price_sats"
@@ -97,9 +101,24 @@ export function AgentCreateListingForm({ agents }: Props) {
           min={1}
           placeholder="50000"
           required
+          onChange={(e) => setBudgetSats(parseInt(e.target.value, 10) || 0)}
           className="w-full bg-zinc-900 border border-zinc-700 text-white px-3 py-2 text-sm placeholder:text-zinc-600 focus:outline-none focus:border-orange-500"
         />
         {fe.price_sats && <p className="text-xs text-red-400">{fe.price_sats}</p>}
+
+        {/* Live fee preview — shown once budget is entered */}
+        {budgetSats > 0 && (() => {
+          const fees = calculateFees(budgetSats, btcPriceUsd)
+          const fmtSats = (n: number) => n.toLocaleString()
+          const fmtUsd  = (n: number) => `$${n.toFixed(2)}`
+          return (
+            <div className="mt-2 border border-zinc-700 bg-zinc-900/50 p-2 text-xs text-zinc-400 space-y-0.5 font-mono">
+              <p>Human earns:    <span className="text-zinc-200">{fmtSats(fees.humanPayoutSats)} sats (≈ {fmtUsd(fees.humanPayoutUsd)})</span></p>
+              <p>Platform fee:   <span className="text-zinc-400">{fmtSats(fees.platformFeeSats)} sats (≈ {fmtUsd(fees.platformFeeUsd)})</span></p>
+              <p className="border-t border-zinc-700 pt-1 text-zinc-200">You pay:  {fmtSats(fees.totalAgentCostSats)} sats (≈ {fmtUsd(fees.totalAgentCostUsd)})</p>
+            </div>
+          )
+        })()}
       </div>
 
       {/* Tags */}

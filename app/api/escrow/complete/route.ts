@@ -32,7 +32,9 @@ export async function POST(request: Request) {
     await releaseEscrowContract(contract.bitescrow_cid)
   }
 
-  const sellerPayout = contract.amount_sats - contract.platform_fee_sats
+  // Human receives 100% of the agreed budget (amount_sats).
+  // Platform fee was charged to the agent on top and is separate.
+  const sellerPayout = contract.amount_sats
 
   // Update contract status
   await service.from('escrow_contracts').update({

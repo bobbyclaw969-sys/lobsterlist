@@ -9,7 +9,7 @@ export type ListingStatus     = 'pending_payment' | 'open' | 'claimed' | 'comple
 export type PricingType       = 'hourly' | 'fixed'
 export type LicenseType       = 'personal' | 'commercial' | 'exclusive'
 export type WaitlistUserType  = 'human' | 'agent_builder'
-export type InvoiceType       = 'agent_registration' | 'listing_fee' | 'escrow_funding'
+export type InvoiceType       = 'agent_registration' | 'listing_fee' | 'escrow_funding' | 'trust_deposit' | 'verification'
 export type InvoiceStatus     = 'pending' | 'paid' | 'expired'
 export type EscrowStatus      = 'pending_funding' | 'funded' | 'completed' | 'disputed' | 'cancelled' | 'refunded'
 export type DisputeStatus     = 'open' | 'resolved' | 'cancelled'
@@ -19,22 +19,28 @@ export type WorkerAvailability = 'full_time' | 'part_time' | 'weekends'
 // ── Row types ─────────────────────────────────────────────────────────────────
 
 export type UserRow = {
-  id:                   string
-  email:                string
-  name:                 string | null
-  bio:                  string | null
-  location:             string | null
-  avatar_url:           string | null
-  skills:               string[]
-  usd_balance_cents:    number
-  payout_info:          Json | null
-  rating:               number
-  completed_task_count: number
-  strike_customer_id:   string | null
-  btc_wallet_address:   string | null
-  wallet_type:          WalletType | null
-  auth_method:          AuthMethod
-  created_at:           string
+  id:                     string
+  email:                  string
+  name:                   string | null
+  bio:                    string | null
+  location:               string | null
+  avatar_url:             string | null
+  skills:                 string[]
+  usd_balance_cents:      number
+  payout_info:            Json | null
+  rating:                 number
+  completed_task_count:   number
+  strike_customer_id:     string | null
+  btc_wallet_address:     string | null
+  wallet_type:            WalletType | null
+  auth_method:            AuthMethod
+  // Verification + trust deposit (added in migration 0010)
+  is_verified:            boolean
+  verification_method:    'wallet' | 'sat_payment' | 'phone' | null
+  trust_deposit_paid:     boolean
+  trust_deposit_sats:     number
+  trust_deposit_returned: boolean
+  created_at:             string
 }
 
 export type AuthChallengeRow = {
@@ -65,22 +71,26 @@ export type AgentRow = {
 }
 
 export type ListingRow = {
-  id:                   string
-  title:                string
-  description:          string
-  price_sats:           number
-  creator_user_id:      string | null
-  creator_agent_id:     string | null
-  claimed_by_user_id:   string | null
-  claimed_by_agent_id:  string | null
-  claimed_at:           string | null
-  category:             ListingCategory
-  status:               ListingStatus
-  tags:                 string[]
-  post_fee_paid:        boolean
-  post_invoice_id:      string | null
-  created_at:           string
-  updated_at:           string
+  id:                    string
+  title:                 string
+  description:           string
+  price_sats:            number
+  creator_user_id:       string | null
+  creator_agent_id:      string | null
+  claimed_by_user_id:    string | null
+  claimed_by_agent_id:   string | null
+  claimed_at:            string | null
+  category:              ListingCategory
+  status:                ListingStatus
+  tags:                  string[]
+  post_fee_paid:         boolean
+  post_invoice_id:       string | null
+  // Fee breakdown (added in migration 0010, derived from price_sats)
+  platform_fee_sats:     number | null
+  total_agent_cost_sats: number | null
+  human_payout_sats:     number | null
+  created_at:            string
+  updated_at:            string
 }
 
 export type ListingJobRow = {
@@ -173,6 +183,17 @@ export type TransactionRow = {
   created_at:   string
 }
 
+export type TrustDepositRow = {
+  id:           string
+  user_id:      string
+  amount_sats:  number
+  invoice_id:   string | null
+  status:       'pending' | 'paid' | 'returned' | 'forfeited'
+  created_at:   string
+  returned_at:  string | null
+  forfeited_at: string | null
+}
+
 export type WorkerProfileRow = {
   id:                    string
   user_id:               string
@@ -208,6 +229,7 @@ export type EscrowContractInsert = Pick<EscrowContractRow, 'listing_id' | 'amoun
 export type DisputeInsert        = Pick<DisputeRow, 'contract_id' | 'raised_by_user_id' | 'reason'> & Partial<DisputeRow>
 export type TransactionInsert    = Pick<TransactionRow, 'user_id' | 'tx_type' | 'amount_sats'> & Partial<TransactionRow>
 export type WorkerProfileInsert  = Pick<WorkerProfileRow, 'user_id' | 'headline' | 'hourly_rate_usd_cents'> & Partial<WorkerProfileRow>
+export type TrustDepositInsert   = Pick<TrustDepositRow, 'user_id'> & Partial<TrustDepositRow>
 
 // ── Database type (Supabase client generic) ───────────────────────────────────
 
@@ -311,6 +333,12 @@ export interface Database {
         Row:           WorkerProfileRow
         Insert:        WorkerProfileInsert
         Update:        Partial<WorkerProfileRow>
+        Relationships: []
+      }
+      trust_deposits: {
+        Row:           TrustDepositRow
+        Insert:        TrustDepositInsert
+        Update:        Partial<TrustDepositRow>
         Relationships: []
       }
     }

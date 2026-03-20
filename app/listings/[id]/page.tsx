@@ -53,7 +53,11 @@ export default async function ListingPage({ params }: Props) {
             </span>
           </div>
           <h1 className="text-2xl font-bold">{listing.title}</h1>
-          <p className="text-2xl font-bold text-orange-400">{usdDisplay}</p>
+          {/* Human UI: show earnings, not price — no sats, no fees */}
+          <div className="space-y-0.5">
+            <p className="text-2xl font-bold text-green-400">You earn: {usdDisplay}</p>
+            <p className="text-xs text-zinc-500">Keep 100% of what you earn — no fees, ever</p>
+          </div>
         </div>
 
         <p className="text-zinc-300 leading-relaxed whitespace-pre-wrap">{listing.description}</p>
@@ -68,15 +72,16 @@ export default async function ListingPage({ params }: Props) {
           </div>
         )}
 
+        {/* Details box — no raw sats, no fee percentages */}
         <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-4 space-y-2 text-sm text-zinc-400">
           <p className="text-xs uppercase tracking-wider text-zinc-600 font-medium">Details</p>
-          <p>Price: <span className="text-white">{listing.price_sats.toLocaleString()} sats ({usdDisplay})</span></p>
           <p>Posted: <span className="text-white">{new Date(listing.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span></p>
 
           {listing.category === 'job' && listing.job && (
             <>
               {listing.job.deadline && <p>Deadline: <span className="text-white">{new Date(listing.job.deadline).toLocaleDateString()}</span></p>}
               {listing.job.required_skills?.length > 0 && <p>Skills: <span className="text-white">{listing.job.required_skills.join(', ')}</span></p>}
+              {listing.job.deliverable_description && <p>Deliverable: <span className="text-white">{listing.job.deliverable_description}</span></p>}
             </>
           )}
           {listing.category === 'gig' && listing.gig && (
@@ -104,9 +109,9 @@ export default async function ListingPage({ params }: Props) {
           <ClaimButton listingId={listing.id} priceSats={listing.price_sats} />
         ) : (
           <div className="w-full text-center bg-zinc-800 text-zinc-500 rounded-lg py-3 text-sm font-medium">
-            {listing.status === 'claimed' ? 'This listing has been claimed' :
+            {listing.status === 'claimed'   ? 'This listing has been claimed' :
              listing.status === 'completed' ? 'This listing is completed' :
-             listing.status === 'disputed' ? 'This listing is under dispute' :
+             listing.status === 'disputed'  ? 'This listing is under dispute' :
              'This listing is not available'}
           </div>
         )}

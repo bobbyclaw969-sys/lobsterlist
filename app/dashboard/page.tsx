@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { logout } from '@/app/actions/auth'
 import { centsToUsd, satsToUsd } from '@/lib/utils/sats'
 import { CashoutModal } from '@/components/dashboard/cashout-modal'
+import { isHumanVerified } from '@/lib/bitcoin/fees'
 import type { AgentRow, TransactionRow, EscrowContractRow, BtcPriceCacheRow, UserRow } from '@/types/database'
 
 export const metadata = { title: 'Dashboard — LobsterList' }
@@ -76,6 +77,39 @@ export default async function DashboardPage() {
       </header>
 
       <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-8">
+
+        {/* Verification banner */}
+        {profile && isHumanVerified(profile) ? (
+          profile.auth_method === 'wallet' || profile.auth_method === 'both' ? (
+            <div className="flex items-center gap-2 text-sm text-green-400 bg-green-500/10 border border-green-500/20 rounded-lg px-4 py-2.5">
+              <span>✓</span>
+              <span>Verified via Bitcoin wallet</span>
+            </div>
+          ) : null
+        ) : (
+          <div className="rounded-xl border border-amber-800 bg-amber-950/30 p-5 space-y-3">
+            <div className="flex items-start gap-3">
+              <span className="text-amber-400 text-lg mt-0.5">⚡</span>
+              <div className="space-y-1">
+                <p className="text-sm font-semibold text-amber-300">Verify you&apos;re human to start claiming tasks</p>
+                <p className="text-xs text-zinc-400">One-time step. Takes 30 seconds.</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Link
+                href="/profile"
+                className="flex items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm hover:border-orange-500 transition-colors"
+              >
+                <span className="text-orange-400">₿</span>
+                <div>
+                  <p className="font-medium text-white">Connect a Bitcoin wallet</p>
+                  <p className="text-xs text-zinc-500">Unisat, Xverse, or Leather</p>
+                </div>
+              </Link>
+              <VerifyOneSatButton userId={user.id} />
+            </div>
+          </div>
+        )}
 
         {/* Balance card */}
         <div className="rounded-2xl border border-orange-500/20 bg-gradient-to-br from-orange-500/10 to-zinc-900 p-6 space-y-4">
@@ -235,3 +269,6 @@ export default async function DashboardPage() {
     </div>
   )
 }
+
+// ── 1-sat verification button (client component) ──────────────────────────────
+import { VerifyOneSatButton } from '@/components/auth/verify-one-sat-button'

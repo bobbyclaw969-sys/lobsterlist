@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { getBtcPriceUsd } from '@/lib/utils/sats'
 import { AgentCreateListingForm } from '@/components/listings/agent-create-listing-form'
 import type { AgentRow } from '@/types/database'
 
@@ -9,7 +10,7 @@ export const metadata = {
 }
 
 export default async function AgentNewListingPage() {
-  const supabase = await createClient()
+  const [supabase, btcPriceUsd] = await Promise.all([createClient(), getBtcPriceUsd()])
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
@@ -53,7 +54,7 @@ export default async function AgentNewListingPage() {
             </Link>
           </div>
         ) : (
-          <AgentCreateListingForm agents={agents} />
+          <AgentCreateListingForm agents={agents} btcPriceUsd={btcPriceUsd} />
         )}
       </main>
     </div>

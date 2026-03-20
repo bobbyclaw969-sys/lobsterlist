@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getBtcPriceUsd, satsToUsd } from '@/lib/utils/sats'
-import { calculatePlatformFee, sellerReceives } from '@/lib/bitcoin/fees'
+import { calculateFees } from '@/lib/bitcoin/fees'
 import { EscrowActions } from '@/components/dashboard/escrow-actions'
 import type { EscrowContractRow, ListingRow } from '@/types/database'
 
@@ -41,12 +41,11 @@ export default async function EscrowPage({ params }: Props) {
     .single()
   const listing = rawListing as Pick<ListingRow, 'id' | 'title' | 'category' | 'price_sats'> | null
 
-  const isBuyer = contract.buyer_user_id === user.id
+  const isBuyer  = contract.buyer_user_id === user.id || contract.buyer_agent_id !== null
   const isSeller = contract.seller_user_id === user.id
 
   const statusInfo = STATUS_LABELS[contract.status] ?? { label: contract.status, color: 'text-zinc-400' }
-  const platformFee = calculatePlatformFee(contract.amount_sats)
-  const sellerNet = sellerReceives(contract.amount_sats)
+  const fees = calculateFees(contract.amount_sats, btcPrice)
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white">
@@ -68,23 +67,42 @@ export default async function EscrowPage({ params }: Props) {
           <p className="text-zinc-500 text-sm">Contract ID: <span className="font-mono">{id.slice(0, 8)}…</span></p>
         </div>
 
-        {/* Financial summary */}
+        {/* Payment summary — role-aware */}
         <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-5 space-y-3">
           <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider">Payment summary</h2>
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-zinc-400">Total locked</span>
-              <span className="font-semibold text-white">{satsToUsd(contract.amount_sats, btcPrice)}</span>
+
+          {isSeller ? (
+            // Human seller: show only what they earn — no fees, ever
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between border-t border-zinc-700 pt-2">
+                <span className="text-zinc-300 font-medium">You earn</span>
+                <div className="text-right">
+                  <span className="font-bold text-green-400 text-lg">{satsToUsd(fees.humanPayoutSats, btcPrice)}</span>
+                </div>
+              </div>
+              <p className="text-xs text-green-600">Keep 100% of what you earn — no fees, ever</p>
             </div>
-            <div className="flex justify-between">
-              <span className="text-zinc-400">Platform fee (5%)</span>
-              <span className="text-zinc-400">{satsToUsd(platformFee, btcPrice)}</span>
+          ) : (
+            // Agent buyer: show full fee breakdown
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-zinc-400">Task budget</span>
+                <span className="text-white">{satsToUsd(fees.humanPayoutSats, btcPrice)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-zinc-400">Platform fee (5%)</span>
+                <span className="text-zinc-400">{satsToUsd(fees.platformFeeSats, btcPrice)}</span>
+              </div>
+              <div className="flex justify-between border-t border-zinc-700 pt-2">
+                <span className="text-zinc-300">Total you pay</span>
+                <span className="font-semibold text-white">{satsToUsd(fees.totalAgentCostSats, btcPrice)}</span>
+              </div>
+              <p className="text-xs text-zinc-600">
+                Humans keep 100% — you pay the platform fee.
+              </p>
             </div>
-            <div className="flex justify-between border-t border-zinc-700 pt-2">
-              <span className="text-zinc-300">Seller receives</span>
-              <span className="font-semibold text-green-400">{satsToUsd(sellerNet, btcPrice)}</span>
-            </div>
-          </div>
+          )}
+
           <p className="text-xs text-zinc-600">
             Funds held in non-custodial escrow. LobsterList never holds your money.
           </p>
@@ -94,7 +112,7 @@ export default async function EscrowPage({ params }: Props) {
         <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-5 space-y-2 text-sm">
           <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider mb-3">Parties</h2>
           <div className="flex justify-between">
-            <span className="text-zinc-400">Buyer {isBuyer ? '(you)' : ''}</span>
+            <span className="text-zinc-400">Buyer {contract.buyer_user_id === user.id ? '(you)' : ''}</span>
             <span className="font-mono text-xs text-zinc-300">
               {contract.buyer_user_id?.slice(0, 8) ?? contract.buyer_agent_id?.slice(0, 8)}…
             </span>
