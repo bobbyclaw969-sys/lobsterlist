@@ -1,6 +1,5 @@
 import Link from 'next/link'
 import { SignupForm } from '@/components/auth/signup-form'
-import { WalletAuthSection } from '@/components/auth/wallet-auth-section'
 
 export const metadata = {
   title: 'Sign Up — LobsterList',
@@ -17,8 +16,6 @@ export default function SignupPage() {
       </div>
 
       <SignupForm />
-
-      <WalletAuthSection />
 
       <p className="text-center text-sm text-zinc-500">
         Already have an account?{' '}

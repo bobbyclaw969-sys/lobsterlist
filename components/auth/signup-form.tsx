@@ -5,6 +5,7 @@ import { signup } from '@/app/actions/auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { WalletConnectButton } from '@/components/auth/wallet-connect-button'
 
 export function SignupForm() {
   const [state, action, pending] = useActionState(signup, undefined)
@@ -68,6 +69,23 @@ export function SignupForm() {
       >
         {pending ? 'Creating account...' : 'Create account'}
       </Button>
+
+      <div className="relative flex items-center gap-3 pt-2">
+        <div className="flex-1 border-t border-zinc-800" />
+        <span className="text-xs text-zinc-600 flex-shrink-0">or continue with</span>
+        <div className="flex-1 border-t border-zinc-800" />
+      </div>
+
+      <div className="space-y-1.5">
+        <WalletConnectButton
+          variant="primary"
+          redirectTo="/browse"
+          className="rounded-lg"
+        />
+        <p className="text-center text-xs text-zinc-600">
+          Unisat, Xverse, and Leather supported
+        </p>
+      </div>
     </form>
   )
 }
