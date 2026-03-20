@@ -2,6 +2,8 @@ export type Json = string | number | boolean | null | { [key: string]: Json | un
 
 // ── Enums ─────────────────────────────────────────────────────────────────────
 
+export type WalletType       = 'unisat' | 'xverse' | 'leather'
+export type AuthMethod       = 'email' | 'wallet' | 'both'
 export type ListingCategory  = 'job' | 'gig' | 'service' | 'good'
 export type ListingStatus    = 'pending_payment' | 'open' | 'claimed' | 'completed' | 'disputed'
 export type PricingType      = 'hourly' | 'fixed'
@@ -28,7 +30,19 @@ export type UserRow = {
   rating:               number
   completed_task_count: number
   strike_customer_id:   string | null
+  btc_wallet_address:   string | null
+  wallet_type:          WalletType | null
+  auth_method:          AuthMethod
   created_at:           string
+}
+
+export type AuthChallengeRow = {
+  id:             string
+  wallet_address: string
+  nonce:          string
+  expires_at:     string
+  used:           boolean
+  created_at:     string
 }
 
 export type AgentRow = {
@@ -269,6 +283,12 @@ export interface Database {
         Row:           BtcPriceCacheRow
         Insert:        Partial<BtcPriceCacheRow>
         Update:        Partial<BtcPriceCacheRow>
+        Relationships: []
+      }
+      auth_challenges: {
+        Row:           AuthChallengeRow
+        Insert:        Omit<AuthChallengeRow, 'id' | 'created_at' | 'used'>
+        Update:        Partial<AuthChallengeRow>
         Relationships: []
       }
     }

@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { logout } from '@/app/actions/auth'
 import { ListingCard } from '@/components/listings/listing-card'
+import { WalletLinkSection } from '@/components/auth/wallet-link-section'
 import { getBtcPriceUsd } from '@/lib/utils/sats'
 import type { ListingWithDetail, UserRow } from '@/types/database'
 
@@ -66,6 +67,11 @@ export default async function MyProfilePage() {
           >
             + New listing
           </Link>
+        </div>
+
+        {/* Wallet */}
+        <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
+          <WalletLinkSection walletAddress={profile?.btc_wallet_address ?? null} />
         </div>
 
         {/* My listings */}

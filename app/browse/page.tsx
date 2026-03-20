@@ -4,7 +4,7 @@ import { logout } from '@/app/actions/auth'
 import { ListingCard } from '@/components/listings/listing-card'
 import { getBtcPriceUsd } from '@/lib/utils/sats'
 import { SortSelect } from '@/components/listings/sort-select'
-import type { ListingCategory, ListingWithDetail } from '@/types/database'
+import type { ListingCategory, ListingWithDetail, UserRow } from '@/types/database'
 
 export const metadata = {
   title: 'Browse — LobsterList',
@@ -38,6 +38,10 @@ export default async function BrowsePage({ searchParams }: BrowsePageProps) {
   ])
 
   const { data: { user } } = await supabase.auth.getUser()
+
+  const rawProfile = user
+    ? (await supabase.from('users').select('btc_wallet_address').eq('id', user.id).single()).data as Pick<UserRow, 'btc_wallet_address'> | null
+    : null
 
   // Build query
   let query = supabase
@@ -78,6 +82,14 @@ export default async function BrowsePage({ searchParams }: BrowsePageProps) {
         <div className="flex items-center gap-3">
           {user && (
             <>
+              {rawProfile?.btc_wallet_address && (
+                <span
+                  className="hidden sm:inline text-xs font-mono text-zinc-500 bg-zinc-800 border border-zinc-700 px-2 py-1 rounded-full"
+                  title={rawProfile.btc_wallet_address}
+                >
+                  {rawProfile.btc_wallet_address.slice(0, 6)}…{rawProfile.btc_wallet_address.slice(-4)}
+                </span>
+              )}
               <Link
                 href="/dashboard"
                 className="text-sm text-zinc-400 hover:text-white transition-colors"

@@ -61,6 +61,14 @@ export default async function DashboardPage() {
         </Link>
         <div className="flex items-center gap-4">
           <Link href="/browse" className="text-sm text-zinc-400 hover:text-white transition-colors">Browse</Link>
+          {profile?.btc_wallet_address && (
+            <span
+              className="hidden sm:inline text-xs font-mono text-zinc-500 bg-zinc-800 border border-zinc-700 px-2 py-1 rounded-full"
+              title={profile.btc_wallet_address}
+            >
+              {profile.btc_wallet_address.slice(0, 6)}…{profile.btc_wallet_address.slice(-4)}
+            </span>
+          )}
           <form action={logout}>
             <button type="submit" className="text-sm text-zinc-500 hover:text-white transition-colors">Sign out</button>
           </form>
