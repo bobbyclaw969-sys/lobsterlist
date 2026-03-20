@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getBtcPriceUsd, satsToUsd } from '@/lib/utils/sats'
+import { ClaimButton } from '@/components/listings/claim-button'
 import type { ListingWithDetail, ListingCategory } from '@/types/database'
 
 const CATEGORY_LABELS: Record<ListingCategory, string> = {
@@ -99,12 +100,16 @@ export default async function ListingPage({ params }: Props) {
           )}
         </div>
 
-        <button
-          disabled
-          className="w-full bg-orange-500/40 text-orange-200 cursor-not-allowed rounded-lg py-3 font-semibold text-sm"
-        >
-          Claim listing — payments in Phase 2
-        </button>
+        {listing.status === 'open' ? (
+          <ClaimButton listingId={listing.id} priceSats={listing.price_sats} />
+        ) : (
+          <div className="w-full text-center bg-zinc-800 text-zinc-500 rounded-lg py-3 text-sm font-medium">
+            {listing.status === 'claimed' ? 'This listing has been claimed' :
+             listing.status === 'completed' ? 'This listing is completed' :
+             listing.status === 'disputed' ? 'This listing is under dispute' :
+             'This listing is not available'}
+          </div>
+        )}
       </main>
     </div>
   )

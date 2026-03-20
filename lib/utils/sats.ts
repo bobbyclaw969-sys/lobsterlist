@@ -1,7 +1,9 @@
 /**
- * Converts satoshis to a USD display string.
- * Uses a cached BTC price fetched server-side.
+ * Sats/USD conversion utilities.
+ * Price sourced from Strike API, cached in Supabase btc_price_cache.
+ * Falls back to mempool.space or $85,000 constant if unavailable.
  */
+
 export function satsToUsd(sats: number, btcPriceUsd: number): string {
   const usd = (sats / 100_000_000) * btcPriceUsd
   if (usd < 0.01) return '<$0.01'
@@ -12,20 +14,31 @@ export function usdToSats(usd: number, btcPriceUsd: number): number {
   return Math.round((usd / btcPriceUsd) * 100_000_000)
 }
 
-let cachedPrice: number | null = null
-let cacheTime = 0
-const CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes
+export function centsToUsd(cents: number): string {
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(cents / 100)
+}
 
+/** Fetches BTC price — tries /api/btc-price (Supabase+Strike cache) first, falls back to mempool.space */
 export async function getBtcPriceUsd(): Promise<number> {
-  if (cachedPrice && Date.now() - cacheTime < CACHE_TTL_MS) return cachedPrice
+  // Server-side: try the internal API route
+  try {
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
+    const res = await fetch(`${siteUrl}/api/btc-price`, { cache: 'no-store' })
+    if (res.ok) {
+      const data = await res.json()
+      return data.priceUsd as number
+    }
+  } catch {
+    // fall through to mempool
+  }
+
+  // Fallback: mempool.space
   try {
     const res = await fetch('https://mempool.space/api/v1/prices', { next: { revalidate: 300 } })
     const data = await res.json()
-    cachedPrice = data.USD
-    cacheTime = Date.now()
-    return cachedPrice ?? 85000
+    return data.USD as number
   } catch {
-    return cachedPrice ?? 85000 // fallback
+    return 85_000
   }
 }
 

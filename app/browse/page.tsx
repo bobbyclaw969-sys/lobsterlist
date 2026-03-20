@@ -77,12 +77,20 @@ export default async function BrowsePage({ searchParams }: BrowsePageProps) {
 
         <div className="flex items-center gap-3">
           {user && (
-            <Link
-              href="/listings/new"
-              className="text-sm bg-orange-500 hover:bg-orange-400 text-white px-4 py-1.5 rounded-full font-medium transition-colors"
-            >
-              + New listing
-            </Link>
+            <>
+              <Link
+                href="/dashboard"
+                className="text-sm text-zinc-400 hover:text-white transition-colors"
+              >
+                Dashboard
+              </Link>
+              <Link
+                href="/listings/new"
+                className="text-sm bg-orange-500 hover:bg-orange-400 text-white px-4 py-1.5 rounded-full font-medium transition-colors"
+              >
+                + New listing
+              </Link>
+            </>
           )}
           {user ? (
             <form action={logout}>
