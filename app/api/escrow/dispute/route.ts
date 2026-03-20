@@ -28,7 +28,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
-  // Raise dispute in BitEscrow
+  // Raise dispute — HTLC escrow via Lightning node in Phase 4
   if (contract.bitescrow_cid) {
     await disputeEscrowContract(contract.bitescrow_cid, reason)
   }

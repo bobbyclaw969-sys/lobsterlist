@@ -86,7 +86,7 @@ export default async function EscrowPage({ params }: Props) {
             </div>
           </div>
           <p className="text-xs text-zinc-600">
-            Funds held by BitEscrow 2-of-2 multisig. LobsterList never holds your money.
+            Funds held in non-custodial escrow. LobsterList never holds your money.
           </p>
         </div>
 

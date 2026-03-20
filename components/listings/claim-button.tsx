@@ -50,7 +50,7 @@ export function ClaimButton({ listingId, priceSats }: ClaimButtonProps) {
         <div className="rounded-xl border border-blue-900 bg-blue-950/30 p-4 space-y-2">
           <p className="text-sm font-semibold text-blue-400">Pay to claim this listing</p>
           <p className="text-xs text-zinc-400">
-            Funds are held in non-custodial escrow (BitEscrow). LobsterList never holds your money.
+            Funds are held in non-custodial escrow. LobsterList never holds your money.
           </p>
         </div>
         <LightningInvoice

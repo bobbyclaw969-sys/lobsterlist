@@ -57,7 +57,7 @@ export async function POST(request: Request) {
   const sellerUserId = listing.creator_user_id ?? null
   const sellerAgentId = listing.creator_agent_id ?? null
 
-  // Create BitEscrow contract
+  // Create mock escrow contract — HTLC escrow via Lightning node in Phase 4
   const escrow = await createEscrowContract({
     listingId,
     buyerId: buyerAgentId ?? user.id,
