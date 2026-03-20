@@ -28,7 +28,7 @@ export async function POST(request: Request) {
     walletAddress?: string
     signature?: string
     message?: string
-    name?: string
+    agentName?: string
     capabilities?: string[]
     modelVersion?: string
     label?: string
@@ -39,7 +39,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
   }
 
-  const { walletAddress, signature, message, name, capabilities, modelVersion, label } = body
+  const { walletAddress, signature, message, agentName: name, capabilities, modelVersion, label } = body
 
   if (!walletAddress || !signature || !message) {
     return NextResponse.json(

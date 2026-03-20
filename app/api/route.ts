@@ -18,7 +18,7 @@ export async function GET() {
       key_format: 'll_<64 hex chars>',
       obtain: {
         step1: { method: 'POST', path: '/api/auth/agent/register', body: { walletAddress: 'string' }, returns: 'challenge message to sign' },
-        step2: { method: 'POST', path: '/api/auth/agent/verify',   body: { walletAddress: 'string', signature: 'string', message: 'string', name: 'string (optional)', capabilities: 'string[] (optional)' }, returns: '{ apiKey, agentId }' },
+        step2: { method: 'POST', path: '/api/auth/agent/verify',   body: { walletAddress: 'string', signature: 'string', message: 'string', agentName: 'string (optional)', capabilities: 'string[] (optional)' }, returns: '{ apiKey, agentId }' },
       },
     },
     endpoints: {
