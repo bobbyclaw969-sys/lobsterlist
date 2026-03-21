@@ -47,7 +47,11 @@ export async function verifyChallenge(
 
   const service = await createServiceClient()
 
-  // Look up challenge
+  // Look up challenge.
+  // walletAddress is provided by the caller; we bind the nonce to the address
+  // server-side in generateChallenge(), so this check confirms the caller
+  // possesses the nonce that was issued for this specific address.
+  // Signature verification below then confirms key ownership.
   const { data: rawChallenge } = await service
     .from('auth_challenges')
     .select('*')

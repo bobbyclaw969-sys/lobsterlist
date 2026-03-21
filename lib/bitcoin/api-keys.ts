@@ -39,12 +39,19 @@ export async function validateApiKey(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data } = await (supabase as any)
     .from('agent_api_keys')
-    .select('agent_id, revoked_at, agents!inner(owner_id)')
+    .select('agent_id, key_hash, revoked_at, agents!inner(owner_id)')
     .eq('key_hash', hash)
     .is('revoked_at', null)
-    .single() as { data: { agent_id: string; revoked_at: string | null; agents: { owner_id: string } } | null }
+    .single() as { data: { agent_id: string; key_hash: string; revoked_at: string | null; agents: { owner_id: string } } | null }
 
   if (!data) return null
+
+  // Constant-time comparison — belt-and-suspenders against timing oracles
+  const expectedBuf = Buffer.from(hash, 'hex')
+  const actualBuf = Buffer.from(data.key_hash, 'hex')
+  if (expectedBuf.length !== actualBuf.length || !crypto.timingSafeEqual(expectedBuf, actualBuf)) {
+    return null
+  }
 
   // Update last_used_at (non-blocking)
   supabase

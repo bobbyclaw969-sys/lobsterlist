@@ -69,7 +69,7 @@ export async function POST(request: Request) {
   const { walletAddress, signature, message, walletType } = await request.json()
 
   if (!walletAddress || !signature || !message) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    return NextResponse.json({ error: 'walletAddress, signature, and message are required' }, { status: 400 })
   }
 
   const valid = await verifyChallenge(walletAddress, signature, message)

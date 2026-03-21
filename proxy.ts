@@ -3,8 +3,6 @@ import { createServerClient } from '@supabase/ssr'
 
 const PROTECTED_PATHS = ['/profile', '/listings/new', '/my-listings', '/dashboard', '/agents', '/escrow', '/agent', '/available/new']
 const AUTH_PATHS = ['/login', '/signup']
-// API routes that agents can call — no redirect, return JSON 401
-const API_PATHS = ['/api/']
 
 /** SHA-256 via Web Crypto (edge + Node compatible) */
 async function sha256Hex(input: string): Promise<string> {
@@ -95,6 +93,13 @@ export async function proxy(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
   const path = request.nextUrl.pathname
+
+  // Agent API routes must be reached via Bearer token (handled above).
+  // Cookie sessions are accepted here as a convenience for the dashboard UI,
+  // but unauthenticated requests get JSON 401 — never an HTML redirect.
+  if (!user && path.startsWith('/api/agent/')) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
 
   // Redirect unauthenticated users away from protected routes
   if (!user && PROTECTED_PATHS.some((p) => path.startsWith(p))) {

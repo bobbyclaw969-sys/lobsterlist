@@ -79,9 +79,18 @@ export async function POST(request: Request) {
     })
 
     if (authError || !authData?.user) {
-      // May already exist if a previous partial registration happened
-      const { data: existingAuth } = await service.auth.admin.listUsers()
-      const existing = existingAuth?.users?.find((u) => u.email === agentEmail)
+      // May already exist if a previous partial registration happened.
+      // Use GoTrue admin REST with email filter — avoids listUsers() pagination cap.
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+      const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+      const adminRes = await fetch(
+        `${supabaseUrl}/auth/v1/admin/users?email=${encodeURIComponent(agentEmail)}&page=1&per_page=1`,
+        { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } },
+      )
+      const adminData = adminRes.ok
+        ? (await adminRes.json() as { users?: Array<{ id: string }> })
+        : { users: [] }
+      const existing = adminData.users?.[0] ?? null
       if (!existing) {
         console.error('[agent/verify] createUser failed', authError)
         return NextResponse.json({ error: 'Failed to create agent account' }, { status: 500 })
