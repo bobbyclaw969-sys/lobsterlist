@@ -1,9 +1,16 @@
 {
   "name": "lobsterlist-mcp",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "LobsterList MCP server for Claude Desktop",
+  "license": "MIT",
   "type": "module",
   "main": "dist/index.js",
+  "bin": {
+    "lobsterlist-mcp": "dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
