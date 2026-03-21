@@ -11,6 +11,7 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 import { generateChallenge } from '@/lib/bitcoin/wallet-auth'
+import { checkRateLimit } from '@/lib/rate-limit'
 
 export async function POST(request: Request) {
   let body: { walletAddress?: string }
@@ -25,9 +26,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'walletAddress is required' }, { status: 400 })
   }
 
+  // IP-based rate limit: 30 challenges per IP per minute across all wallet addresses
+  const clientIp = request.headers.get('x-forwarded-for') ?? request.headers.get('x-real-ip') ?? 'unknown'
+  const ipRateOk = await checkRateLimit(`challenge:ip:${clientIp}`, 30, 60)
+  if (!ipRateOk) {
+    return NextResponse.json(
+      { error: 'Too many requests. Wait 60 seconds before trying again.' },
+      { status: 429 },
+    )
+  }
+
   const service = await createServiceClient()
 
-  // Rate limit: max 5 challenges per address in last 60 seconds
+  // Rate limit: max 5 challenges per address in last 60 seconds (DB-backed, survives restarts)
   const cutoff = new Date(Date.now() - 60_000).toISOString()
   const { count } = await service
     .from('auth_challenges')

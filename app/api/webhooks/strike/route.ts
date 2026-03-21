@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
+import { timingSafeEqual } from 'crypto'
 import { createServiceClient } from '@/lib/supabase/server'
-import type { LightningInvoiceRow } from '@/types/database'
 
 /**
  * Strike webhook handler.
@@ -18,24 +18,31 @@ import type { LightningInvoiceRow } from '@/types/database'
 export async function POST(request: Request) {
   const rawBody = await request.text()
 
-  // Signature verification (when STRIKE_WEBHOOK_SECRET is set)
+  // Reject immediately if secret is not configured — never process unsigned webhooks
   const secret = process.env.STRIKE_WEBHOOK_SECRET
-  if (secret) {
-    const signature = request.headers.get('x-strike-signature')
-    if (!signature) {
-      return NextResponse.json({ error: 'Missing signature' }, { status: 401 })
-    }
+  if (!secret) {
+    console.error('[webhook/strike] CRITICAL: STRIKE_WEBHOOK_SECRET not configured')
+    return NextResponse.json({ error: 'Webhook not configured' }, { status: 500 })
+  }
 
-    // Strike uses HMAC-SHA256
-    const encoder = new TextEncoder()
-    const key = await crypto.subtle.importKey(
-      'raw', encoder.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
-    )
-    const sig = await crypto.subtle.sign('HMAC', key, encoder.encode(rawBody))
-    const expected = Buffer.from(sig).toString('hex')
-    if (signature !== expected) {
-      return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
-    }
+  const signature = request.headers.get('x-strike-signature')
+  if (!signature) {
+    return NextResponse.json({ error: 'Missing signature' }, { status: 401 })
+  }
+
+  // Strike uses HMAC-SHA256
+  const encoder = new TextEncoder()
+  const hmacKey = await crypto.subtle.importKey(
+    'raw', encoder.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+  )
+  const sig = await crypto.subtle.sign('HMAC', hmacKey, encoder.encode(rawBody))
+  const expected = Buffer.from(sig).toString('hex')
+
+  // Timing-safe comparison — prevents timing oracle attacks
+  const sigBuffer = Buffer.from(signature, 'utf8')
+  const expBuffer = Buffer.from(expected, 'utf8')
+  if (sigBuffer.length !== expBuffer.length || !timingSafeEqual(sigBuffer, expBuffer)) {
+    return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
   }
 
   const payload = JSON.parse(rawBody)
@@ -53,23 +60,19 @@ export async function POST(request: Request) {
 
   const service = await createServiceClient()
 
-  // Find our invoice record
-  const { data: rawInvoice } = await service
-    .from('lightning_invoices')
-    .select('*')
-    .eq('strike_invoice_id', strikeInvoiceId)
-    .maybeSingle()
-  const invoice = rawInvoice as LightningInvoiceRow | null
+  // Atomic claim: UPDATE WHERE status='pending' — exactly-once processing
+  // under concurrent webhook deliveries or Strike retries.
+  type ClaimedInvoice = { id: string; status: string; invoice_type: string; entity_id: string; amount_sats: number }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const rpcResult = await (service as any).rpc('claim_invoice_for_processing', { p_strike_invoice_id: strikeInvoiceId })
+  const claimed = (rpcResult.data ?? []) as ClaimedInvoice[]
 
-  if (!invoice || invoice.status === 'paid') {
-    return NextResponse.json({ ok: true }) // already processed or unknown
+  if (!claimed || claimed.length === 0) {
+    // Already processed or unknown invoice — return 200 so Strike stops retrying
+    return NextResponse.json({ ok: true })
   }
 
-  // Mark invoice as paid
-  await service
-    .from('lightning_invoices')
-    .update({ status: 'paid', paid_at: new Date().toISOString() })
-    .eq('id', invoice.id)
+  const invoice = claimed[0]
 
   // Act based on invoice type
   if (invoice.invoice_type === 'agent_registration') {

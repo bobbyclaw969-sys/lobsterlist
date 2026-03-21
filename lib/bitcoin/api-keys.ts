@@ -2,7 +2,7 @@
  * Agent API key utilities.
  *
  * Format: ll_<64 hex chars>  (67 chars total)
- * Prefix: first 8 chars (e.g. "ll_a3f9b2") — safe to display
+ * Prefix: first 14 chars (e.g. "ll_a3f9b2c1d4") — safe to display, enough to distinguish keys
  * Storage: SHA-256 hash of the full key — plaintext shown exactly once
  */
 
@@ -17,7 +17,7 @@ export function generateApiKey(): { key: string; hash: string; prefix: string } 
   return {
     key,
     hash: hashApiKey(key),
-    prefix: key.slice(0, 8),
+    prefix: key.slice(0, 14),
   }
 }
 

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 import { verifyChallenge } from '@/lib/bitcoin/wallet-auth'
+import { checkRateLimit } from '@/lib/rate-limit'
 import type { UserRow, WalletType } from '@/types/database'
 
 async function createSessionForUser(email: string): Promise<{ accessToken: string; refreshToken: string } | null> {
@@ -70,6 +71,16 @@ export async function POST(request: Request) {
 
   if (!walletAddress || !signature || !message) {
     return NextResponse.json({ error: 'walletAddress, signature, and message are required' }, { status: 400 })
+  }
+
+  // Rate limit: 10 verify attempts per wallet per minute, 20 per IP per minute
+  const clientIp = request.headers.get('x-forwarded-for') ?? request.headers.get('x-real-ip') ?? 'unknown'
+  const [walletRateOk, ipRateOk] = await Promise.all([
+    checkRateLimit(`verify:wallet:${walletAddress}`, 10, 60),
+    checkRateLimit(`verify:ip:${clientIp}`, 20, 60),
+  ])
+  if (!walletRateOk || !ipRateOk) {
+    return NextResponse.json({ error: 'Too many attempts. Try again later.' }, { status: 429 })
   }
 
   const valid = await verifyChallenge(walletAddress, signature, message)

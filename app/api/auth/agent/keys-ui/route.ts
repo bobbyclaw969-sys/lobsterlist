@@ -5,7 +5,7 @@
  * (cookie) rather than Bearer token. Used by the agent dashboard UI.
  *
  * POST   — create a new key { agentId, label? }
- * DELETE — revoke a key { agentId, keyPrefix }
+ * DELETE — revoke a key { agentId, keyId }  ← UUID from the keys list
  */
 import { NextResponse, type NextRequest } from 'next/server'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
@@ -53,11 +53,11 @@ export async function DELETE(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  let body: { agentId?: string; keyPrefix?: string }
+  let body: { agentId?: string; keyId?: string }
   try { body = await request.json() } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }) }
 
-  if (!body.agentId || !body.keyPrefix) {
-    return NextResponse.json({ error: 'agentId and keyPrefix required' }, { status: 400 })
+  if (!body.agentId || !body.keyId) {
+    return NextResponse.json({ error: 'agentId and keyId required' }, { status: 400 })
   }
 
   const agent = await verifyOwnership(body.agentId, user.id)
@@ -68,7 +68,7 @@ export async function DELETE(request: NextRequest) {
     .from('agent_api_keys')
     .update({ revoked_at: new Date().toISOString() })
     .eq('agent_id', agent.id)
-    .eq('key_prefix', body.keyPrefix)
+    .eq('id', body.keyId)
     .is('revoked_at', null)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })

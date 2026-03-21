@@ -49,17 +49,17 @@ export function ApiKeysSection({ agentId: _agentId, initialKeys }: Props) {
     setPending(false)
   }
 
-  async function revokeKey(prefix: string) {
+  async function revokeKey(id: string, prefix: string) {
     if (!confirm(`Revoke key ${prefix}...? This cannot be undone.`)) return
 
     const res = await fetch('/api/auth/agent/keys-ui', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ agentId: _agentId, keyPrefix: prefix }),
+      body: JSON.stringify({ agentId: _agentId, keyId: id }),
     })
 
     if (res.ok) {
-      setKeys((prev) => prev.filter((k) => k.key_prefix !== prefix))
+      setKeys((prev) => prev.filter((k) => k.id !== id))
     }
   }
 
@@ -132,7 +132,7 @@ export function ApiKeysSection({ agentId: _agentId, initialKeys }: Props) {
                   : 'never'}
               </span>
               <button
-                onClick={() => revokeKey(k.key_prefix)}
+                onClick={() => revokeKey(k.id, k.key_prefix)}
                 className="text-zinc-700 hover:text-red-400 flex-shrink-0 transition-colors"
               >
                 revoke

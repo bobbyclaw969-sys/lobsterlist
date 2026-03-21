@@ -1,5 +1,4 @@
 import { createServiceClient } from '@/lib/supabase/server'
-import type { AuthChallengeRow } from '@/types/database'
 
 /**
  * Generate a challenge message for wallet signature verification.
@@ -47,42 +46,27 @@ export async function verifyChallenge(
 
   const service = await createServiceClient()
 
-  // Look up challenge.
-  // walletAddress is provided by the caller; we bind the nonce to the address
-  // server-side in generateChallenge(), so this check confirms the caller
-  // possesses the nonce that was issued for this specific address.
-  // Signature verification below then confirms key ownership.
-  const { data: rawChallenge } = await service
-    .from('auth_challenges')
-    .select('*')
-    .eq('nonce', nonce)
-    .eq('wallet_address', walletAddress)
-    .single()
-  const challenge = rawChallenge as AuthChallengeRow | null
+  // Atomic consume: UPDATE WHERE used=false AND expires_at > now()
+  // Only one concurrent request can ever consume a given nonce.
+  // Returns 0 rows if nonce not found, already used, expired, or wrong address.
+  // All failure cases return false with no information leakage about which check failed.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const consumeResult = await (service as any).rpc('consume_auth_challenge', {
+    p_nonce: nonce,
+    p_wallet_address: walletAddress,
+  })
+  const consumed = consumeResult.data as Array<{ id: string; wallet_address: string }> | null
 
-  if (!challenge) {
-    console.warn('[wallet-auth] verify failed — nonce not found', { walletAddress, timestamp: new Date().toISOString() })
-    return false
-  }
-
-  // Mark used immediately (before checking anything else — prevents timing attacks)
-  await service
-    .from('auth_challenges')
-    .update({ used: true })
-    .eq('id', challenge.id)
-
-  if (challenge.used) {
-    console.warn('[wallet-auth] verify failed — nonce already used', { walletAddress, timestamp: new Date().toISOString() })
-    return false
-  }
-
-  if (new Date(challenge.expires_at) < new Date()) {
-    console.warn('[wallet-auth] verify failed — nonce expired', { walletAddress, timestamp: new Date().toISOString() })
+  if (!consumed || consumed.length === 0) {
+    console.warn('[wallet-auth] verify failed — nonce not found, already used, or expired', { walletAddress, timestamp: new Date().toISOString() })
     return false
   }
 
   // Verify signature
   try {
+    // TODO: Monitor bitcoinjs-message for elliptic patch (advisory GHSA-848j-6mx2-7j84).
+    // Current mitigation: server-side only; never exposed to untrusted input beyond
+    // the signature string. package.json overrides elliptic to 6.6.1 (latest available).
     // Dynamic import to handle potential CJS/ESM issues with bitcoinjs-message
     const bitcoinjsMessage = await import('bitcoinjs-message')
     const verify = bitcoinjsMessage.default?.verify ?? bitcoinjsMessage.verify

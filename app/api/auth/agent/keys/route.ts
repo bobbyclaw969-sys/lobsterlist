@@ -5,7 +5,7 @@
  *
  * GET    — list active keys for the agent
  * POST   — create a new key (body: { label?: string })
- * DELETE — revoke a key (body: { keyPrefix: string })
+ * DELETE — revoke a key (body: { keyId: string })  ← UUID from the keys list
  */
 import { NextResponse, type NextRequest } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
@@ -72,15 +72,15 @@ export async function DELETE(request: NextRequest) {
   const agent = await getAgentFromRequest(request)
   if (!agent) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  let keyPrefix: string | undefined
+  let keyId: string | undefined
   try {
     const body = await request.json()
-    keyPrefix = body.keyPrefix
+    keyId = body.keyId
   } catch {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
   }
 
-  if (!keyPrefix) return NextResponse.json({ error: 'keyPrefix is required' }, { status: 400 })
+  if (!keyId) return NextResponse.json({ error: 'keyId is required' }, { status: 400 })
 
   const service = await createServiceClient()
 
@@ -88,7 +88,7 @@ export async function DELETE(request: NextRequest) {
     .from('agent_api_keys')
     .update({ revoked_at: new Date().toISOString() })
     .eq('agent_id', agent.agentId)
-    .eq('key_prefix', keyPrefix)
+    .eq('id', keyId)
     .is('revoked_at', null)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
