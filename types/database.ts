@@ -199,6 +199,18 @@ export type TransactionRow = {
   created_at:   string
 }
 
+// ── Rate Limiter (migration 20260323) ────────────────────────────────────────
+
+export type RateLimitRow = {
+  id:           string
+  key_prefix:   string
+  key_hash:     string
+  count:        number
+  window_start: string
+  created_at:   string
+  updated_at:  string
+}
+
 export type TrustDepositRow = {
   id:           string
   user_id:      string
