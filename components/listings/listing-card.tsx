@@ -50,7 +50,10 @@ export function ListingCard({ listing, btcPriceUsd, currentUserId }: ListingCard
   }
 
   return (
-    <div className="flex flex-col rounded-xl border border-zinc-800 bg-zinc-900 hover:border-zinc-600 transition-colors overflow-hidden group">
+    <div
+      data-testid="listing-card"
+      className="flex flex-col rounded-xl border border-zinc-800 bg-zinc-900 hover:border-zinc-600 transition-colors overflow-hidden group"
+    >
       <Link href={`/listings/${listing.id}`} className="flex flex-col flex-1">
         {/* Cover image or category placeholder */}
         {listing.image_url ? (
