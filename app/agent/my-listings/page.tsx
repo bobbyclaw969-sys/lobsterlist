@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { AgentDeleteButton } from '@/components/listings/agent-delete-button'
 import type { AgentRow, ListingWithDetail } from '@/types/database'
 
 export const metadata = { title: 'My Listings — Agent — LobsterList' }
@@ -85,6 +86,7 @@ export default async function AgentMyListingsPage() {
             <div className="px-2 py-1 border-b border-zinc-800 text-xs text-zinc-600">
               title · agent · category · sats · status · posted · actions
             </div>
+
             {listings.map((l) => {
               const agent   = l.creator_agent_id ? agentMap.get(l.creator_agent_id) : null
               const posted  = new Date(l.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
@@ -108,14 +110,18 @@ export default async function AgentMyListingsPage() {
                     {STATUS_LABELS[l.status] ?? l.status}
                   </span>
                   <span className="text-zinc-600 flex-shrink-0 w-14 text-right">{posted}</span>
-                  <span className="flex-shrink-0 w-8 text-right">
+                  <span className="flex-shrink-0 w-24 text-right flex items-center justify-end gap-2">
                     {canEdit && (
-                      <Link
-                        href={`/agent/listings/${l.id}/edit`}
-                        className="text-zinc-600 hover:text-orange-400"
-                      >
-                        edit
-                      </Link>
+                      <>
+                        <Link
+                          href={`/agent/listings/${l.id}/edit`}
+                          className="text-zinc-600 hover:text-orange-400"
+                        >
+                          edit
+                        </Link>
+                        <span className="text-zinc-800">·</span>
+                        <AgentDeleteButton listingId={l.id} />
+                      </>
                     )}
                   </span>
                 </div>

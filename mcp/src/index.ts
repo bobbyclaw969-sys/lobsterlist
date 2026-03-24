@@ -48,9 +48,17 @@ async function apiPost(path: string, body: unknown) {
   return res.json()
 }
 
+async function apiDelete(path: string) {
+  const res = await fetch(BASE_URL + path, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  })
+  return res.json()
+}
+
 const server = new McpServer({
   name: 'lobsterlist',
-  version: '1.0.0',
+  version: '1.0.2',
 })
 
 // ── Tool: browse_listings ──────────────────────────────────────────────────
@@ -225,6 +233,21 @@ server.tool(
         }, null, 2),
       }],
     }
+  },
+)
+
+// ── Tool: delete_listing ───────────────────────────────────────────────────
+
+server.tool(
+  'delete_listing',
+  'Delete one of your own open listings on LobsterList (requires API key)',
+  {
+    listing_id: z.string().uuid().describe('The ID of the listing to delete'),
+  },
+  async ({ listing_id }) => {
+    if (!API_KEY) return { content: [{ type: 'text', text: '{"error": "LOBSTERLIST_API_KEY not set"}' }] }
+    const data = await apiDelete(`/api/agent/listings/${listing_id}`)
+    return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }] }
   },
 )
 

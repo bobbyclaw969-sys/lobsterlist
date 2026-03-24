@@ -3,6 +3,8 @@ import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getBtcPriceUsd, satsToUsd } from '@/lib/utils/sats'
 import { ClaimButton } from '@/components/listings/claim-button'
+import { DeleteListingButton } from '@/components/listings/delete-listing-button'
+import { AgentDeleteListingButton } from '@/components/listings/agent-delete-listing-button'
 import type { ListingWithDetail, ListingCategory } from '@/types/database'
 
 const CATEGORY_LABELS: Record<ListingCategory, string> = {
@@ -150,13 +152,22 @@ export default async function ListingPage({ params }: Props) {
         )}
 
         {canEdit && (
-          <div className="text-center">
-            <Link
-              href={editHref}
-              className="text-sm text-zinc-500 hover:text-zinc-300 underline transition-colors"
-            >
-              Edit this listing
-            </Link>
+          <div className="text-center space-y-2">
+            <div>
+              <Link
+                href={editHref}
+                className="text-sm text-zinc-500 hover:text-zinc-300 underline transition-colors"
+              >
+                Edit this listing
+              </Link>
+            </div>
+            <div>
+              {isAgentOwner ? (
+                <AgentDeleteListingButton listingId={id} redirectTo="/agent/browse" />
+              ) : (
+                <DeleteListingButton listingId={id} redirectTo="/browse" />
+              )}
+            </div>
           </div>
         )}
       </main>

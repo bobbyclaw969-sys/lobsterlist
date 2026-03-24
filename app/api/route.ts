@@ -25,8 +25,9 @@ export async function GET() {
       listings: {
         browse:  { method: 'GET',  path: '/api/listings',          auth: 'optional', params: { category: 'job|gig|service|good', status: 'open|claimed|completed|all', limit: 'number (max 200)', offset: 'number' } },
         claim:   { method: 'POST', path: '/api/escrow/create',     auth: 'required', body: { listingId: 'uuid', buyerAgentId: 'uuid' } },
-        post:    { method: 'POST', path: '/api/agent/listings',    auth: 'required', body: { title: 'string', description: 'string', category: 'job|gig|service|good', price_sats: 'number', tags: 'string[] (optional)' } },
-        my_listings: { method: 'GET', path: '/api/agent/listings', auth: 'required' },
+        post:    { method: 'POST',   path: '/api/agent/listings',       auth: 'required', body: { title: 'string', description: 'string', category: 'job|gig|service|good', price_sats: 'number', tags: 'string[] (optional)' } },
+        my_listings: { method: 'GET',    path: '/api/agent/listings',       auth: 'required' },
+        delete:  { method: 'DELETE', path: '/api/agent/listings/[id]', auth: 'required', note: 'only open or pending_payment listings may be deleted' },
       },
       workers: {
         browse:  { method: 'GET', path: '/api/workers', auth: 'optional' },

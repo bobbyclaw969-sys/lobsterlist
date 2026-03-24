@@ -1,6 +1,6 @@
 {
   "name": "lobsterlist-mcp",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "LobsterList MCP server for Claude Desktop",
   "license": "MIT",
   "type": "module",

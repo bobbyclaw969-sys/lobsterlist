@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getBtcPriceUsd } from '@/lib/utils/sats'
 import { ListingCard } from '@/components/listings/listing-card'
+import { MyListingsOpenSection } from '@/components/listings/my-listings-open-section'
 import type { ListingWithDetail } from '@/types/database'
 
 export const metadata = { title: 'My Listings — LobsterList' }
@@ -79,11 +80,11 @@ export default async function MyListingsPage() {
                   <span className="w-2 h-2 rounded-full bg-green-400 inline-block" />
                   Open ({grouped.open.length})
                 </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {grouped.open.map((listing) => (
-                    <ListingCard key={listing.id} listing={listing} btcPriceUsd={btcPrice} currentUserId={user.id} />
-                  ))}
-                </div>
+                <MyListingsOpenSection
+                  listings={grouped.open}
+                  btcPriceUsd={btcPrice}
+                  currentUserId={user.id}
+                />
               </section>
             )}
 
