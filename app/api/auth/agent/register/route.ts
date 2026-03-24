@@ -22,8 +22,9 @@ export async function POST(request: Request) {
   }
 
   const walletAddress = body.walletAddress?.trim()
-  if (!walletAddress || walletAddress.length < 10) {
-    return NextResponse.json({ error: 'walletAddress is required' }, { status: 400 })
+  const BTC_ADDRESS_RE = /^(1|3)[a-km-zA-HJ-NP-Z1-9]{24,33}$|^bc1[a-z0-9]{6,87}$/
+  if (!walletAddress || !BTC_ADDRESS_RE.test(walletAddress)) {
+    return NextResponse.json({ error: 'Invalid Bitcoin wallet address' }, { status: 400 })
   }
 
   // IP-based rate limit: 30 challenges per IP per minute across all wallet addresses

@@ -10,8 +10,13 @@ export async function PATCH(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const body = await request.json()
-  const limit = parseInt(body.spendingLimitSats, 10)
+  let body: { spendingLimitSats?: string | number }
+  try {
+    body = await request.json()
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
+  }
+  const limit = parseInt(String(body.spendingLimitSats ?? ''), 10)
   if (isNaN(limit) || limit < 0) {
     return NextResponse.json({ error: 'Invalid spending limit' }, { status: 400 })
   }

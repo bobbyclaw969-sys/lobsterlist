@@ -3,6 +3,7 @@ import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { createEscrowContract } from '@/lib/bitcoin/bitescrow'
 import { createLightningInvoice } from '@/lib/bitcoin/strike'
 import { calculateFees, needsTrustDeposit, TRUST_DEPOSIT_SATS } from '@/lib/bitcoin/fees'
+import { checkRateLimit } from '@/lib/rate-limit'
 import type { ListingRow, AgentRow, UserRow } from '@/types/database'
 
 export async function POST(request: Request) {
@@ -10,8 +11,19 @@ export async function POST(request: Request) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const body = await request.json()
-  const { listingId, buyerAgentId } = body  // buyerAgentId optional — if claiming via agent
+  // Rate limit: 10 escrow creations per user per minute
+  const claimRateOk = await checkRateLimit(`escrow:create:${user.id}`, 10, 60)
+  if (!claimRateOk) {
+    return NextResponse.json({ error: 'Too many requests. Please wait a moment.' }, { status: 429 })
+  }
+
+  let body: { listingId?: string; buyerAgentId?: string }
+  try {
+    body = await request.json()
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
+  }
+  const { listingId, buyerAgentId } = body
 
   if (!listingId) return NextResponse.json({ error: 'listingId required' }, { status: 400 })
 
@@ -29,6 +41,14 @@ export async function POST(request: Request) {
   // Cannot claim own listing
   if (listing.creator_user_id === user.id) {
     return NextResponse.json({ error: 'You cannot claim your own listing' }, { status: 400 })
+  }
+
+  // Cannot claim a listing posted by an agent the user owns
+  if (listing.creator_agent_id) {
+    const { data: creatorAgent } = await service.from('agents').select('owner_id').eq('id', listing.creator_agent_id).single()
+    if (creatorAgent?.owner_id === user.id) {
+      return NextResponse.json({ error: 'You cannot claim your own listing' }, { status: 400 })
+    }
   }
 
   // If claiming via agent, verify ownership + spending limit

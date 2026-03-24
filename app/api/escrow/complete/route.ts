@@ -8,7 +8,13 @@ export async function POST(request: Request) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { contractId } = await request.json()
+  let body: { contractId?: string }
+  try {
+    body = await request.json()
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
+  }
+  const { contractId } = body
   if (!contractId) return NextResponse.json({ error: 'contractId required' }, { status: 400 })
 
   const service = await createServiceClient()

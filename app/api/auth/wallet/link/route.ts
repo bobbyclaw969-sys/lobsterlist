@@ -8,7 +8,13 @@ export async function POST(request: Request) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { walletAddress, signature, message, walletType } = await request.json()
+  let body: { walletAddress?: string; signature?: string; message?: string; walletType?: string }
+  try {
+    body = await request.json()
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
+  }
+  const { walletAddress, signature, message, walletType } = body
   if (!walletAddress || !signature || !message) {
     return NextResponse.json({ error: 'walletAddress, signature, and message are required' }, { status: 400 })
   }

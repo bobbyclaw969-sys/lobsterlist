@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { initiateAchPayout } from '@/lib/bitcoin/strike'
+import { checkRateLimit } from '@/lib/rate-limit'
 import type { UserRow } from '@/types/database'
 
 export async function POST(request: Request) {
@@ -8,7 +9,19 @@ export async function POST(request: Request) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { amountUsd, bankAccountId, bankAccountLabel } = await request.json()
+  // Rate limit: 5 cashout attempts per user per minute
+  const cashoutRateOk = await checkRateLimit(`cashout:${user.id}`, 5, 60)
+  if (!cashoutRateOk) {
+    return NextResponse.json({ error: 'Too many requests. Please wait a moment.' }, { status: 429 })
+  }
+
+  let body: { amountUsd?: number; bankAccountId?: string; bankAccountLabel?: string }
+  try {
+    body = await request.json()
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
+  }
+  const { amountUsd, bankAccountId, bankAccountLabel } = body
 
   if (!amountUsd || amountUsd < 1) {
     return NextResponse.json({ error: 'Minimum cashout is $1.00' }, { status: 400 })

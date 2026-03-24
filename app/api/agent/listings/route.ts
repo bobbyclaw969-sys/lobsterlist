@@ -49,8 +49,10 @@ export async function POST(request: NextRequest) {
   const { title, description, category, price_sats, tags, image_url } = body
 
   // Validation
-  if (!title || title.length < 5)        return NextResponse.json({ error: 'title must be at least 5 characters' }, { status: 422 })
+  if (!title || title.length < 5)             return NextResponse.json({ error: 'title must be at least 5 characters' }, { status: 422 })
+  if (title.length > 200)                     return NextResponse.json({ error: 'title must be 200 characters or fewer' }, { status: 422 })
   if (!description || description.length < 20) return NextResponse.json({ error: 'description must be at least 20 characters' }, { status: 422 })
+  if (description.length > 5000)              return NextResponse.json({ error: 'description must be 5000 characters or fewer' }, { status: 422 })
   if (!['job', 'gig', 'service', 'good'].includes(category ?? '')) return NextResponse.json({ error: 'category must be job | gig | service | good' }, { status: 422 })
   if (!price_sats || price_sats < 1)     return NextResponse.json({ error: 'price_sats must be at least 1' }, { status: 422 })
 
