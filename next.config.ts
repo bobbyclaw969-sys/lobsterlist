@@ -6,6 +6,8 @@ const nextConfig: NextConfig = {
       {
         source: '/(.*)',
         headers: [
+          // Enable DNS prefetching for performance
+          { key: 'X-DNS-Prefetch-Control', value: 'on' },
           // Prevent MIME-type sniffing
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           // Prevent clickjacking (belt-and-suspenders with CSP frame-ancestors)
