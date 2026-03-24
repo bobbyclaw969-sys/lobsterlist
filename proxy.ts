@@ -14,7 +14,18 @@ async function sha256Hex(input: string): Promise<string> {
 }
 
 export async function proxy(request: NextRequest) {
-  let response = NextResponse.next({ request })
+  // ── Strip internal identity headers from EVERY incoming request ───────────
+  // Prevents client-injected header spoofing. x-agent-* headers may ONLY be
+  // set by this proxy after cryptographic Bearer token validation below.
+  // Without this, a cookie-authenticated attacker can inject x-agent-id to
+  // impersonate any agent on /api/agent/* routes.
+  const strippedHeaders = new Headers(request.headers)
+  strippedHeaders.delete('x-agent-id')
+  strippedHeaders.delete('x-agent-user-id')
+  strippedHeaders.delete('x-is-agent')
+  strippedHeaders.delete('x-auth-method')
+
+  let response = NextResponse.next({ request: { headers: strippedHeaders } })
 
   // ── Bearer token auth (agents) ────────────────────────────────────────────
   const authHeader = request.headers.get('authorization') ?? ''
@@ -45,8 +56,9 @@ export async function proxy(request: NextRequest) {
         const ownerRow = Array.isArray(agents) ? agents[0] : agents
         const owner_id = ownerRow?.owner_id ?? ''
 
-        // Inject agent identity headers so route handlers can trust them
-        const reqHeaders = new Headers(request.headers)
+        // Inject agent identity headers — built on strippedHeaders so client
+        // values are always discarded before our validated values are set.
+        const reqHeaders = new Headers(strippedHeaders)
         reqHeaders.set('x-agent-id', agent_id)
         reqHeaders.set('x-agent-user-id', owner_id)
         reqHeaders.set('x-is-agent', 'true')
@@ -82,7 +94,7 @@ export async function proxy(request: NextRequest) {
         getAll() { return request.cookies.getAll() },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
-          response = NextResponse.next({ request })
+          response = NextResponse.next({ request: { headers: strippedHeaders } })
           cookiesToSet.forEach(({ name, value, options }) =>
             response.cookies.set(name, value, options)
           )

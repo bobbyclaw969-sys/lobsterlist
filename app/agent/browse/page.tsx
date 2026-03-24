@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { WorkerRow } from '@/components/workers/worker-row'
 import type { ListingWithDetail, WorkerProfileWithUser } from '@/types/database'
 
@@ -13,12 +13,14 @@ export default async function AgentBrowsePage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
+  const service = await createServiceClient()
+
   const { data: rawUserAgents } = await supabase
     .from('agents').select('id').eq('owner_id', user.id)
   const myAgentIds = new Set((rawUserAgents ?? []).map((a: { id: string }) => a.id))
 
   const [{ data: rawWorkers }, { data: rawListings }] = await Promise.all([
-    supabase
+    service
       .from('worker_profiles')
       .select('*, user:users(id, name, avatar_url, rating)')
       .eq('is_active', true)

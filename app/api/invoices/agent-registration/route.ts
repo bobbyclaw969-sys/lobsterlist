@@ -8,11 +8,21 @@ export async function POST(request: Request) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const body = await request.json()
+  let body: { btcWalletAddress?: string; name?: string; description?: string; capabilities?: string[] }
+  try {
+    body = await request.json()
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
+  }
   const { btcWalletAddress, name, description, capabilities } = body
 
   if (!btcWalletAddress || !name) {
     return NextResponse.json({ error: 'btcWalletAddress and name are required' }, { status: 400 })
+  }
+
+  const BTC_ADDRESS_RE = /^(1|3)[a-km-zA-HJ-NP-Z1-9]{24,33}$|^bc1[a-z0-9]{6,87}$/
+  if (!BTC_ADDRESS_RE.test(btcWalletAddress)) {
+    return NextResponse.json({ error: 'Invalid Bitcoin wallet address' }, { status: 422 })
   }
 
   // Check wallet address not already registered

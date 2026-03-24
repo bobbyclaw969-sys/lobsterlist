@@ -136,6 +136,18 @@ export async function POST(request: Request) {
   const sellerUserId  = listing.creator_user_id ?? null
   const sellerAgentId = listing.creator_agent_id ?? null
 
+  // ── Atomic claim ────────────────────────────────────────────────────────────
+  // Single UPDATE WHERE status='open' — only one concurrent request can win.
+  // Returns 0 rows if another request already claimed the listing.
+  // The UNIQUE(listing_id) constraint on escrow_contracts is defense-in-depth.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: claimResult } = await (service as any).rpc('claim_listing_atomic', {
+    p_listing_id: listingId,
+  })
+  if (!claimResult || claimResult.length === 0) {
+    return NextResponse.json({ error: 'Listing is no longer available' }, { status: 409 })
+  }
+
   // Create mock escrow contract — HTLC escrow via Lightning node in Phase 4
   const escrow = await createEscrowContract({
     listingId,
@@ -168,9 +180,6 @@ export async function POST(request: Request) {
   if (contractError || !contract) {
     return NextResponse.json({ error: contractError?.message ?? 'Failed to create contract' }, { status: 500 })
   }
-
-  // Mark listing as claimed so no other buyer can race to claim it
-  await service.from('listings').update({ status: 'claimed' }).eq('id', listingId)
 
   // Create Lightning invoice for escrow funding
   // Agent pays: budget + platform fee = totalAgentCostSats

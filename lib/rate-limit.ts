@@ -61,9 +61,10 @@ export async function checkRateLimit(
 
     return data?.allowed ?? false
   } catch (err) {
-    console.error('[rate-limit] error:', err)
-    // Fail open in dev, fail closed in prod
-    return process.env.NODE_ENV === 'development'
+    console.error('[rate-limit] DB error — failing closed:', err)
+    // Fail CLOSED: an unavailable rate limiter must not open access.
+    // Return false (blocked) in all environments.
+    return false
   }
 }
 

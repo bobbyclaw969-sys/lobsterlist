@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { initiateAchPayout } from '@/lib/bitcoin/strike'
 import { checkRateLimit } from '@/lib/rate-limit'
-import type { UserRow } from '@/types/database'
 
 export async function POST(request: Request) {
   const supabase = await createClient()
@@ -31,28 +30,43 @@ export async function POST(request: Request) {
   }
 
   const service = await createServiceClient()
-  const { data: raw } = await service.from('users').select('*').eq('id', user.id).single()
-  if (!raw) return NextResponse.json({ error: 'User not found' }, { status: 404 })
-  const profile = raw as UserRow
-
   const amountCents = Math.round(amountUsd * 100)
-  if (profile.usd_balance_cents < amountCents) {
-    return NextResponse.json({
-      error: `Insufficient balance. Available: $${(profile.usd_balance_cents / 100).toFixed(2)}`,
-    }, { status: 402 })
+
+  // ── Atomic balance deduction ────────────────────────────────────────────────
+  // Single UPDATE WHERE balance >= amount — only one concurrent request wins.
+  // Prevents double-spend: two concurrent requests can no longer both pass the
+  // old read-check-update pattern and both initiate Strike payouts.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: deducted } = await (service as any).rpc('deduct_balance_atomic', {
+    p_user_id: user.id,
+    p_amount_cents: amountCents,
+  }) as { data: Array<{ success: boolean; remaining_balance: number }> | null }
+
+  if (!deducted || deducted.length === 0 || !deducted[0].success) {
+    return NextResponse.json({ error: 'Insufficient balance' }, { status: 402 })
   }
 
-  // Initiate Strike ACH payout
-  const payout = await initiateAchPayout({
-    amountUsd,
-    bankAccountId,
-    description: `LobsterList earnings — ${bankAccountLabel ?? bankAccountId}`,
-  })
+  const remainingBalance = deducted[0].remaining_balance
 
-  // Deduct balance
-  await service.from('users').update({
-    usd_balance_cents: profile.usd_balance_cents - amountCents,
-  }).eq('id', user.id)
+  // ── Initiate Strike ACH payout ──────────────────────────────────────────────
+  // Balance is already deducted. If Strike fails, refund atomically.
+  let payout: Awaited<ReturnType<typeof initiateAchPayout>>
+  try {
+    payout = await initiateAchPayout({
+      amountUsd,
+      bankAccountId,
+      description: `LobsterList earnings — ${bankAccountLabel ?? bankAccountId}`,
+    })
+  } catch (err) {
+    // Refund atomically so the user's balance is restored
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (service as any).rpc('refund_balance', {
+      p_user_id: user.id,
+      p_amount_cents: amountCents,
+    })
+    console.error('[cashout] Strike payout failed — balance refunded', err)
+    return NextResponse.json({ error: 'Payout failed. Your balance has been restored.' }, { status: 502 })
+  }
 
   // Record transaction (sats equivalent using cached price)
   const { data: priceCache } = await service.from('btc_price_cache').select('price_usd').eq('id', 1).single()
@@ -72,6 +86,6 @@ export async function POST(request: Request) {
     payoutId: payout.payoutId,
     state: payout.state,
     mockMode: payout.mockMode,
-    newBalanceCents: profile.usd_balance_cents - amountCents,
+    newBalanceCents: remainingBalance,
   })
 }

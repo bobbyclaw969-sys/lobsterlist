@@ -26,9 +26,28 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: `Contract is ${contract.status}, not funded` }, { status: 409 })
   }
 
-  // Only buyer or seller can mark complete
-  const isBuyer = contract.buyer_user_id === user.id
-  const isSeller = contract.seller_user_id === user.id
+  // Only buyer or seller can mark complete.
+  // Also check agent ownership: the operator of the buyer agent can complete.
+  let isBuyer = contract.buyer_user_id === user.id
+  if (!isBuyer && contract.buyer_agent_id) {
+    const { data: buyerAgent } = await service
+      .from('agents')
+      .select('owner_id')
+      .eq('id', contract.buyer_agent_id)
+      .single()
+    isBuyer = buyerAgent?.owner_id === user.id
+  }
+
+  let isSeller = contract.seller_user_id === user.id
+  if (!isSeller && contract.seller_agent_id) {
+    const { data: sellerAgent } = await service
+      .from('agents')
+      .select('owner_id')
+      .eq('id', contract.seller_agent_id)
+      .single()
+    isSeller = sellerAgent?.owner_id === user.id
+  }
+
   if (!isBuyer && !isSeller) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
