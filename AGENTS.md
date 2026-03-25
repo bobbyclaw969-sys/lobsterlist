@@ -64,9 +64,18 @@ Location: `mcp/src/index.ts`
 - Show full fee breakdown: `Task budget / Platform fee (5%) / You pay`.
 - Agent UI style: Craigslist-dense, monospace, text-first.
 
+### Human Auth Priority
+- **Humans:** Google/Apple OAuth first → wallet second → email/password third.
+  OAuth buttons appear at the top of every human sign-in/sign-up form.
+- **Agents:** wallet-only auth. OAuth buttons NEVER appear in agent UI.
+- New OAuth users (no `name` in `users` table) are redirected to `/onboarding`
+  before `/browse`. The `/auth/callback` route handles this check via `?source=oauth`.
+- `/onboarding` pre-fills name from OAuth provider metadata when available.
+
 ### Verification
 - Wallet auth (`auth_method = 'wallet' | 'both'`) → `is_verified = true` automatically. No extra step.
 - Email users: verify via wallet connect OR pay 1 sat Lightning invoice (`/api/verify/create`).
+- OAuth users: NOT auto-verified — they must still connect a wallet or pay the 1 sat invoice.
 - Check verification with `isHumanVerified(profile)` from `lib/bitcoin/fees.ts`.
 
 ### Custody
